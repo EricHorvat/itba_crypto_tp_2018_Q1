@@ -1,10 +1,7 @@
 #include <iostream>
-#include <array>
-#include <vector>
 #include <string>
-#include <algorithm>
-#include <set>
 #include <map>
+#include <>
 
 void print_help(){
 
@@ -60,9 +57,9 @@ int main( int argc, char **argv) {
 
     std::map<std::string,std::string> parsed_arg;
     parse_arg(argc,argv,&parsed_arg);
-    for(std::map<std::string,std::string>::iterator iter = parsed_arg.begin(); iter != parsed_arg.end(); ++iter)
+    for(const auto& elem : parsed_arg)
     {
-        std::cout << iter->first << " = " << iter->second << std::endl;
+        std::cout << elem.first << " = " << elem.second << std::endl;
     }
 
     return 0;
