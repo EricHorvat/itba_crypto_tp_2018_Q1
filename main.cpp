@@ -1,10 +1,7 @@
 #include <iostream>
-#include <array>
-#include <vector>
 #include <string>
-#include <algorithm>
-#include <set>
 #include <map>
+#include <>
 
 void print_help(){
 
@@ -21,10 +18,11 @@ int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map)
             }
             else {
                 if((*arg_map).find("mode")->second == "embed"){
-                    std::cerr << "-embed argument passed more than once";
+                    std::clog << "WARN: -embed argument passed more than once" << std::endl;
                 }else {
-                    std::cerr << "Both -embed and -extract argument passed";
+                    std::cerr << "ERR: Both -embed and -extract argument passed" << std::endl;
                     print_help();
+                    std::exit(1);
                 }
             }
         } else if (arg == "-extract") {
@@ -33,38 +31,36 @@ int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map)
             }
             else {
                 if((*arg_map).find("mode")->second == "extract"){
-                    std::cerr << "-embed argument passed more than once";
+                    std::clog << "WARN: -embed argument passed more than once" << std::endl;
                 }else {
-                    std::cerr << "Both -embed and -extract argument passed";
+                    std::cerr << "ERR: Both -embed and -extract argument passed" << std::endl;
                     print_help();
+                    std::exit(1);
                 }
             }
-        } else if (arg == "-test") {
-            //TODO CONTROL
-            (*arg_map)["test"] = "true";
         } else if (arg == "-in" || arg == "-out" || arg == "-p" || arg == "-m" || arg == "-a" || arg == "-pass" ||
                    arg == "-steg") {
-            //TODO CONTROL
-            (*arg_map)[arg] = argv[i+1];
+            if ((*arg_map).find(arg) == (*arg_map).end()) {
+                (*arg_map)[arg] = argv[i+1];
+            }
+            else {
+                std::cerr << "ERR: Argument " << arg <<" passed more than once" << std::endl;
+                print_help();
+                std::exit(1);
+            }
             i++;
         }
     }
-
 }
 
 int main( int argc, char **argv) {
 
     std::map<std::string,std::string> parsed_arg;
     parse_arg(argc,argv,&parsed_arg);
-    if (parsed_arg.find("mode") != parsed_arg.end())
-        std::string s = parsed_arg.find("mode")->second;
-    else
-        std::cout << "q";
-    if (parsed_arg.find("test") != parsed_arg.end())
-        std::string sq = parsed_arg.find("test")->second;
-    else
-        std::cout <<"w";
-
+    for(const auto& elem : parsed_arg)
+    {
+        std::cout << elem.first << " = " << elem.second << std::endl;
+    }
 
     return 0;
 }
