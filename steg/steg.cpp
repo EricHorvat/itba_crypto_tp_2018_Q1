@@ -78,13 +78,13 @@ void steg::stegLSB1(const char* porter_filename, const char* info_filename, cons
         if (more_info) {
             uint8_t aux = info_buffer[info_i], aux2 = porter_buffer[porter_i];
             uint8_t signific_bits = std::pow(2,bit_l) - 1;
-            aux >>= (7 - info_ii);
+            aux >>= (8 - bit_l - info_ii);
             aux &= signific_bits;
             aux |= (0xFF - signific_bits);
             aux2 |= signific_bits;
             aux &= aux2;
             y = aux;
-            info_ii++;
+            info_ii += bit_l;
             if (info_ii == 8){
                 info_ii = 0;
                 info_i++;
@@ -127,9 +127,10 @@ void steg::dec_stegLSB1(const char* porter_filename, const char* destiny_filenam
     size_t file_size = 0;
     size_t written = 0;
 
+    uint8_t bit_l = 1;
 
     while (!end) {
-        porter_read = fread(porter_buffer, 1, 8, porter_file);
+        porter_read = fread(porter_buffer, 1, 8/bit_l, porter_file);
 
         /*DA MAGIC explained
          * (a: the info byte)                                           a = info_buffer[info_i]
@@ -139,10 +140,11 @@ void steg::dec_stegLSB1(const char* porter_filename, const char* destiny_filenam
          * (e: clean least important bit from porter)                   e = porter_buffer[porter_i] | 1
          * (f: combine and resultant byte)                              f = d & e*/
         uint8_t aux = 0;
-        for (uint8_t i = 0; i < 8; ++i) {
+        for (uint8_t i = 0; i < 8/bit_l; i++) {
             uint8_t aux2 = porter_buffer[i];
-            aux <<= 1;
-            aux2 &= 1;
+            uint8_t signific_bits = std::pow(2,bit_l) - 1;
+            aux <<= bit_l;
+            aux2 &= signific_bits;
             aux |= aux2;
         }
         if (size_i < 4) {
