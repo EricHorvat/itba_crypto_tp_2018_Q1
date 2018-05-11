@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <cmath>
 #include "steg.h"
 
 #define BUFFERSIZE 128
@@ -36,7 +37,6 @@ void steg::stegLSB1(const char* porter_filename, const char* info_filename, cons
 
     auto porter_buffer = (uint8_t *) malloc(sizeof(uint8_t) * BUFFERSIZE);
     auto info_buffer = (uint8_t*) malloc(sizeof(uint8_t) * BUFFERSIZE);
-    auto buffer = (uint32_t *) malloc(sizeof(uint32_t));
 
     bool end = false;
     bool more_info = true;
@@ -48,7 +48,9 @@ void steg::stegLSB1(const char* porter_filename, const char* info_filename, cons
 
     size_t info_i = 0;
     size_t info_ii = 0;
-    size_t info_read = 32;
+    size_t info_read = 4;
+
+    uint8_t bit_l = 1;
 
     while (!end) {
         if (porter_i == porter_read) {
@@ -75,10 +77,11 @@ void steg::stegLSB1(const char* porter_filename, const char* info_filename, cons
         uint8_t y;
         if (more_info) {
             uint8_t aux = info_buffer[info_i], aux2 = porter_buffer[porter_i];
+            uint8_t signific_bits = std::pow(2,bit_l) - 1;
             aux >>= (7 - info_ii);
-            aux &= 0x01;
-            aux |= 0xFE;
-            aux2 |= 0x01;
+            aux &= signific_bits;
+            aux |= (0xFF - signific_bits);
+            aux2 |= signific_bits;
             aux &= aux2;
             y = aux;
             info_ii++;
