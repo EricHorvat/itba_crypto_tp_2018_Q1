@@ -10,7 +10,9 @@
 
 class steg {
 
-    void steg(std::string porter_filename, std::string info_filename, std::string destiny_filename);
+public:
+    static void stegLSB1(const char* porter_filename, const char* info_filename, const char* destiny_filename);
+    static void dec_stegLSB1(const char* porter_filename, const char* destiny_filename);
 
 };
 
