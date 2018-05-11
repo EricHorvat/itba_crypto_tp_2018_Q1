@@ -36,20 +36,19 @@ void steg::stegLSB1(const char* porter_filename, const char* info_filename, cons
 
     auto porter_buffer = (uint8_t *) malloc(sizeof(uint8_t) * BUFFERSIZE);
     auto info_buffer = (uint8_t*) malloc(sizeof(uint8_t) * BUFFERSIZE);
-
-    size_t info_i = BUFFERSIZE;
-    size_t info_ii = 0;
-
-    size_t info_read = BUFFERSIZE;
+    auto buffer = (uint32_t *) malloc(sizeof(uint32_t));
 
     bool end = false;
     bool more_info = true;
 
-
     size_t porter_read = fread(porter_buffer,1,54,porter_file);
     size_t porter_i = porter_read;
-    fwrite(&info_size, sizeof(uint32_t),1,destiny_file);
     fwrite(porter_buffer, sizeof(uint8_t),54,destiny_file);
+    std::memcpy(info_buffer,&info_size, sizeof(uint32_t));
+
+    size_t info_i = 0;
+    size_t info_ii = 0;
+    size_t info_read = 32;
 
     while (!end) {
         if (porter_i == porter_read) {
@@ -112,6 +111,7 @@ void steg::dec_stegLSB1(const char* porter_filename, const char* destiny_filenam
 
     long porter_size = get_file_size(porter_file);
 
+    auto tmp_porter_buffer = (uint8_t *) malloc(sizeof(char) * 54);
     auto porter_buffer = (uint8_t *) malloc(sizeof(char) * 8);
     auto size_buffer = (uint8_t *) malloc(sizeof(char) * 4);
 
@@ -119,7 +119,7 @@ void steg::dec_stegLSB1(const char* porter_filename, const char* destiny_filenam
 
     bool end = false;
 
-    size_t porter_read = fread(porter_buffer,1,54,porter_file);
+    size_t porter_read = fread(tmp_porter_buffer,1,54,porter_file);
 
     size_t file_size = 0;
     size_t written = 0;
@@ -150,9 +150,6 @@ void steg::dec_stegLSB1(const char* porter_filename, const char* destiny_filenam
             }
         } else {
             written += fwrite(&aux, sizeof(uint8_t),1,destiny_file);
-            if (written % 40000000 == 0){
-                int a = 5;
-            }
             end = written == file_size;
         }
     }
