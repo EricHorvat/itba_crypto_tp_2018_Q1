@@ -19,7 +19,7 @@ using namespace std;
         return size;
     }
 
-void steg::stegLSB1(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
+void stegLSB(const char* porter_filename, const char* info_filename, const char* destiny_filename, const uint8_t bit_l, const bool is_lsbe) {
 
     std::FILE* porter_file = std::fopen(porter_filename,"rb");
     std::FILE* info_file = std::fopen(info_filename,"rb");
@@ -49,8 +49,11 @@ void steg::stegLSB1(const char* porter_filename, const char* info_filename, cons
     size_t info_i = 0;
     size_t info_ii = 0;
     size_t info_read = 4;
+    size_t info_written = 0;
 
-    uint8_t bit_l = 1;
+    uint8_t signific_bits = std::pow(2,bit_l) - 1;
+
+    size_t written = 0;
 
     while (!end) {
         if (porter_i == porter_read) {
@@ -75,28 +78,27 @@ void steg::stegLSB1(const char* porter_filename, const char* info_filename, cons
          * (e: clean least important bit from porter)                   e = porter_buffer[porter_i] | 1
          * (f: combine and resultant byte)                              f = d & e*/
         uint8_t y;
-        if (more_info) {
-            uint8_t aux = info_buffer[info_i], aux2 = porter_buffer[porter_i];
-            uint8_t signific_bits = std::pow(2,bit_l) - 1;
-            aux >>= (8 - bit_l - info_ii);
-            aux &= signific_bits;
-            aux |= (0xFF - signific_bits);
-            aux2 |= signific_bits;
-            aux &= aux2;
-            y = aux;
+        uint8_t info_aux = info_buffer[info_i], porter_aux = porter_buffer[porter_i];
+        if (more_info && ( !is_lsbe || (porter_aux&0xFE) == 0xFE)) {
+            info_aux >>= (8 - bit_l - info_ii);
+            info_aux &= signific_bits;
+            info_aux |= (0xFF - signific_bits);
+            porter_aux |= signific_bits;
+            info_aux &= porter_aux;
+            y = info_aux;
             info_ii += bit_l;
             if (info_ii == 8){
                 info_ii = 0;
                 info_i++;
+                info_written++;
             }
         } else {
-            y = porter_buffer[porter_i];
+            y = porter_aux;
         }
-        //char y = (char) ((((>> (7-info_ii))& 0x01)|254) & (porter_buffer[porter_i] | 1));
 
         porter_i++;
 
-        fwrite(&y, sizeof(uint8_t),1,destiny_file);
+        written += fwrite(&y, sizeof(uint8_t),1,destiny_file);
 
         end = ftell(porter_file) == porter_size;
     }
@@ -105,9 +107,15 @@ void steg::stegLSB1(const char* porter_filename, const char* info_filename, cons
     fclose(porter_file);
     fclose(destiny_file);
 
+    if(info_written != info_size + /*FROM size*/4){
+        //TODO ERROR
+        cerr << "INFO DO NOT ENTER, MAX SIZE = " << info_written << endl;
+        exit(1);
+    }
+
 }
 
-void steg::dec_stegLSB1(const char* porter_filename, const char* destiny_filename) {
+void dec_stegLSB(const char* porter_filename, const char* destiny_filename, const uint8_t bit_l) {
 
     std::FILE* porter_file = std::fopen(porter_filename,"rb");
     std::FILE* destiny_file = std::fopen(destiny_filename,"wb");
@@ -120,15 +128,14 @@ void steg::dec_stegLSB1(const char* porter_filename, const char* destiny_filenam
 
     size_t size_i = 0;
 
-    bool end = false;
-
     size_t porter_read = fread(tmp_porter_buffer,1,54,porter_file);
 
     size_t file_size = 0;
     size_t written = 0;
 
-    uint8_t bit_l = 1;
+    uint8_t signific_bits = std::pow(2,bit_l) - 1;
 
+    bool end = false;
     while (!end) {
         porter_read = fread(porter_buffer, 1, 8/bit_l, porter_file);
 
@@ -142,7 +149,6 @@ void steg::dec_stegLSB1(const char* porter_filename, const char* destiny_filenam
         uint8_t aux = 0;
         for (uint8_t i = 0; i < 8/bit_l; i++) {
             uint8_t aux2 = porter_buffer[i];
-            uint8_t signific_bits = std::pow(2,bit_l) - 1;
             aux <<= bit_l;
             aux2 &= signific_bits;
             aux |= aux2;
@@ -164,4 +170,26 @@ void steg::dec_stegLSB1(const char* porter_filename, const char* destiny_filenam
 
 }
 
+void steg::stegLSB1(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
+    stegLSB(porter_filename, info_filename, destiny_filename, 1, false);
+}
 
+void steg::stegLSB4(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
+    stegLSB(porter_filename, info_filename, destiny_filename, 4, false);
+}
+
+void steg::stegLSBE(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
+    stegLSB(porter_filename, info_filename, destiny_filename, 1, true);
+}
+
+void steg::dec_stegLSB1(const char* porter_filename, const char* destiny_filename){
+    dec_stegLSB(porter_filename,destiny_filename,1);
+}
+
+void steg::dec_stegLSB4(const char* porter_filename, const char* destiny_filename){
+    dec_stegLSB(porter_filename,destiny_filename,4);
+}
+
+void steg::dec_stegLSBE(const char* porter_filename, const char* destiny_filename){
+    //dec_stegLSB(porter_filename,destiny_filename,4);
+}
