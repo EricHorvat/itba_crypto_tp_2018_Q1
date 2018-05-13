@@ -3,4 +3,4 @@ project(cripto_tp)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(cripto_tp main.cpp)
+add_executable(cripto_tp main.cpp steg/steg.cpp steg/steg.h)

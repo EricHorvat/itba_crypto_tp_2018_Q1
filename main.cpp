@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include "steg/steg.h"
 
 void print_help(){
 
@@ -60,6 +61,9 @@ int main( int argc, char **argv) {
     {
         std::cout << elem.first << " = " << elem.second << std::endl;
     }
+
+    steg::stegLSB1("../in/big.bmp","../in/mid.bmp","../out/bigg.bmp");
+    steg::dec_stegLSB1("../out/bigg.bmp","../out/midd");
 
     return 0;
 }
