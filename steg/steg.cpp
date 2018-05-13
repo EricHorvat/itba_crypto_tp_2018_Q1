@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cstring>
 #include <cmath>
+#include <vector>
 #include "steg.h"
 
 #define BUFFERSIZE 128
@@ -60,11 +61,19 @@ using namespace std;
 
     }
 
+    std::string get_extension(const std::string filename){
+        unsigned long last_dot_position = filename.find_last_of('.');
+        return filename.substr(last_dot_position,filename.length()-1);
+    }
+
 
     void stegLSB(const char* porter_filename, const char* info_filename, const char* destiny_filename, const uint8_t bit_l, const bool is_lsbe) {
 
     std::FILE* porter_file = std::fopen(porter_filename,"rb");
     std::FILE* info_file = std::fopen(info_filename,"rb");
+
+    std::string extension = get_extension(info_filename);
+
     std::FILE* destiny_file = std::fopen(destiny_filename,"wb");
 
     /*CONTROL SIZE*/
@@ -100,12 +109,19 @@ using namespace std;
             porter_i = 0;
             porter_read = fread(porter_buffer, 1, BUFFERSIZE, porter_file);
         }
-        if (info_i == info_read) {
+        if (info_i == info_read && more_info) {
             if (ftell(info_file) != info_size) {
                 info_i = 0;
                 info_bit = 0;
                 info_read = fread(info_buffer, 1, BUFFERSIZE, info_file);
-            } else {
+            } else if (extension.length() > info_written - info_size - 4){
+                info_i = 0;
+                info_bit = 0;
+                const char* extensionn = extension.c_str();
+                std::memcpy(info_buffer,extensionn, extension.length());
+                info_buffer[extension.length()] = '\0';
+                info_read = extension.length()+1;
+            } else{
                 more_info = false;
             }
         }
@@ -136,7 +152,7 @@ using namespace std;
     fclose(porter_file);
     fclose(destiny_file);
 
-    if(info_written != info_size + /*FROM size*/4){
+    if(info_written != info_size + /*FROM size*/4 + extension.length() + 1 /*FROM '\0'*/){
         //TODO ERROR
         cerr << "INFO DO NOT ENTER, MAX SIZE = " << info_written << endl;
         exit(1);
@@ -164,12 +180,11 @@ void dec_stegLSB(const char* porter_filename, const char* destiny_filename, cons
     size_t file_size = 0;
     size_t written = 0;
 
-    uint8_t signific_bits = std::pow(2,bit_l) - 1;
-
     bool end = false;
     bool to_write = false;
     uint8_t to_write_byte;
     uint8_t info_aux = 0;
+    string extension = "";
     while (!end) {
         porter_read = fread(porter_buffer, 1, 1, porter_file);
 
@@ -193,9 +208,11 @@ void dec_stegLSB(const char* porter_filename, const char* destiny_filename, cons
                 if (size_i == 4) {
                     file_size = *((uint32_t *) size_buffer);
                 }
-            } else {
+            } else if (written < file_size){
                 written += fwrite(&to_write_byte, sizeof(uint8_t), 1, destiny_file);
-                end = written == file_size;
+            } else {
+                end = to_write_byte == 0;
+                extension += to_write_byte;
             }
             to_write = false;
         }
@@ -204,6 +221,11 @@ void dec_stegLSB(const char* porter_filename, const char* destiny_filename, cons
 
     fclose(porter_file);
     fclose(destiny_file);
+
+    std::string dest = destiny_filename;
+    dest+=  extension;
+
+    rename(destiny_filename,dest.c_str());
 
 }
 
