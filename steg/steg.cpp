@@ -8,6 +8,8 @@
 #include <vector>
 #include "steg.h"
 
+#include <openssl/des.h>
+
 #define BUFFERSIZE 128
 using namespace std;
 
@@ -67,100 +69,120 @@ using namespace std;
     }
 
 
-    void stegLSB(const char* porter_filename, const char* info_filename, const char* destiny_filename, const uint8_t bit_l, const bool is_lsbe) {
+    void stegLSB(const char* porter_filename, const char* info_filename, const char* destiny_filename, const uint8_t bit_l, const bool is_lsbe, uint8_t* (*f)(uint8_t*,size_t), size_t buffersize) {
 
-    std::FILE* porter_file = std::fopen(porter_filename,"rb");
-    std::FILE* info_file = std::fopen(info_filename,"rb");
+        std::FILE* porter_file = std::fopen(porter_filename,"rb");
+        std::FILE* info_file = std::fopen(info_filename,"rb");
 
-    std::string extension = get_extension(info_filename);
+        std::string extension = get_extension(info_filename);
+        const char* extension_c_str = extension.c_str();
 
-    std::FILE* destiny_file = std::fopen(destiny_filename,"wb");
+        std::FILE* destiny_file = std::fopen(destiny_filename,"wb");
 
-    /*CONTROL SIZE*/
-    long porter_size = get_file_size(porter_file);
-    auto info_size = (uint32_t) get_file_size(info_file);
+        /*CONTROL SIZE*/
+        long porter_size = get_file_size(porter_file);
+        auto info_size = (uint32_t) get_file_size(info_file);
 
-    if (info_size * 8L > 3L * (porter_size - 53)){
-        //TODO ERROR
-        cerr << "INFO TOO BIG" << endl;
-        exit(1);
-    }
-
-    auto porter_buffer = (uint8_t *) malloc(sizeof(uint8_t) * BUFFERSIZE);
-    auto info_buffer = (uint8_t*) malloc(sizeof(uint8_t) * BUFFERSIZE);
-
-    bool end = false;
-    bool more_info = true;
-
-    size_t porter_read = fread(porter_buffer,1,54,porter_file);
-    size_t porter_i = porter_read;
-    fwrite(porter_buffer, sizeof(uint8_t),54,destiny_file);
-    std::memcpy(info_buffer,&info_size, sizeof(uint32_t));
-
-    size_t info_i = 0;
-    size_t info_bit = 0;
-    size_t info_read = 4;
-    size_t info_written = 0;
-
-    size_t written = 0;
-
-    while (!end) {
-        if (porter_i == porter_read) {
-            porter_i = 0;
-            porter_read = fread(porter_buffer, 1, BUFFERSIZE, porter_file);
+        if (info_size * 8L > 3L * (porter_size - 53)){
+            //TODO ERROR
+            cerr << "INFO TOO BIG" << endl;
+            exit(1);
         }
-        if (info_i == info_read && more_info) {
-            if (ftell(info_file) != info_size) {
+
+        auto porter_buffer = (uint8_t *) malloc(sizeof(uint8_t) * buffersize);
+        auto info_buffer = (uint8_t*) malloc(sizeof(uint8_t) * buffersize);
+        auto c_info_buffer = (uint8_t*) malloc(sizeof(uint8_t) * buffersize);
+
+        bool size_written = false;
+        bool end = false;
+        bool more_info = true;
+
+        size_t porter_read = fread(porter_buffer,1,54,porter_file);
+        size_t porter_i = porter_read;
+        fwrite(porter_buffer, sizeof(uint8_t),54,destiny_file);
+
+        size_t info_i = 0;
+        size_t info_bit = 0;
+        size_t info_read = 0;
+        size_t info_written = 0;
+
+        size_t extension_read = 0;
+        size_t written = 0;
+
+        while (!end) {
+            if (porter_i == porter_read) {
+                porter_i = 0;
+                porter_read = fread(porter_buffer, 1, buffersize, porter_file);
+            }
+            if (info_i == info_read && more_info) {
                 info_i = 0;
                 info_bit = 0;
-                info_read = fread(info_buffer, 1, BUFFERSIZE, info_file);
-            } else if (extension.length() > info_written - info_size - 4){
-                info_i = 0;
-                info_bit = 0;
-                const char* extensionn = extension.c_str();
-                std::memcpy(info_buffer,extensionn, extension.length());
-                info_buffer[extension.length()] = '\0';
-                info_read = extension.length()+1;
-            } else{
-                more_info = false;
+                info_read = 0;
+                info_buffer = (uint8_t*) malloc(sizeof(uint8_t) * buffersize);
+
+                while (info_read < buffersize and more_info){
+                    if (!size_written){
+                        info_read += 4;
+                        std::memcpy(info_buffer,&info_size, sizeof(uint32_t));
+                        size_written = true;
+                    } else if (ftell(info_file) != info_size) {
+                        info_read += fread(info_buffer+info_read, 1, buffersize-info_read, info_file);
+                    } else if (extension.length() > info_written + info_read - info_size - 4) {
+                        size_t i = 0;
+                        if (buffersize >= info_read + extension.length() - extension_read) {
+                            i = extension.length();
+                        }else {
+                            i = info_read + extension.length() - extension_read - buffersize;
+                        }
+                        std::memcpy(info_buffer + info_read, extension_c_str + extension_read,i);
+                        info_read += i;
+                        extension_read += i;
+                    } else if (extension.length() == info_written + info_read - info_size - 4) {
+                        info_buffer[info_read] = '\0';
+                        info_read += 1;
+                        break;
+                    }else {
+                        more_info = false;
+                    }
+                }
+                if (more_info)
+                    c_info_buffer = (*f)(info_buffer, buffersize);
             }
+
+            uint8_t y;
+            uint8_t info_aux = c_info_buffer[info_i], porter_aux = porter_buffer[porter_i];
+            if (more_info && ( !is_lsbe || (porter_aux&0xFE) == 0xFE)) {
+
+                y = add_bit(info_aux,porter_aux,bit_l,info_bit);
+                info_bit += bit_l;
+                if (info_bit == 8){
+                    info_bit = 0;
+                    info_i++;
+                    info_written++;
+                }
+            } else {
+                y = porter_aux;
+            }
+
+            porter_i++;
+
+            written += fwrite(&y, sizeof(uint8_t),1,destiny_file);
+
+            end = ftell(porter_file) == porter_size;
         }
 
-        uint8_t y;
-        uint8_t info_aux = info_buffer[info_i], porter_aux = porter_buffer[porter_i];
-        if (more_info && ( !is_lsbe || (porter_aux&0xFE) == 0xFE)) {
+        fclose(info_file);
+        fclose(porter_file);
+        fclose(destiny_file);
 
-            y = add_bit(info_aux,porter_aux,bit_l,info_bit);
-            info_bit += bit_l;
-            if (info_bit == 8){
-                info_bit = 0;
-                info_i++;
-                info_written++;
-            }
-        } else {
-            y = porter_aux;
+        if(info_written != info_size + /*FROM size*/4 + extension.length() + 1 /*FROM '\0'*/){
+            //TODO ERROR
+            cerr << "INFO DO NOT ENTER, MAX SIZE = " << info_written << endl;
+            exit(1);
         }
-
-        porter_i++;
-
-        written += fwrite(&y, sizeof(uint8_t),1,destiny_file);
-
-        end = ftell(porter_file) == porter_size;
     }
 
-    fclose(info_file);
-    fclose(porter_file);
-    fclose(destiny_file);
-
-    if(info_written != info_size + /*FROM size*/4 + extension.length() + 1 /*FROM '\0'*/){
-        //TODO ERROR
-        cerr << "INFO DO NOT ENTER, MAX SIZE = " << info_written << endl;
-        exit(1);
-    }
-
-}
-
-void dec_stegLSB(const char* porter_filename, const char* destiny_filename, const uint8_t bit_l, const bool is_lsbe) {
+    void dec_stegLSB(const char* porter_filename, const char* destiny_filename, const uint8_t bit_l, const bool is_lsbe, uint8_t* (*f)(uint8_t*,size_t), size_t buffersize) {
 
     std::FILE* porter_file = std::fopen(porter_filename,"rb");
     std::FILE* destiny_file = std::fopen(destiny_filename,"wb");
@@ -184,7 +206,7 @@ void dec_stegLSB(const char* porter_filename, const char* destiny_filename, cons
     bool to_write = false;
     uint8_t to_write_byte;
     uint8_t info_aux = 0;
-    string extension = "";
+    string extension;
     while (!end) {
         porter_read = fread(porter_buffer, 1, 1, porter_file);
 
@@ -229,26 +251,43 @@ void dec_stegLSB(const char* porter_filename, const char* destiny_filename, cons
 
 }
 
-void steg::stegLSB1(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
-    stegLSB(porter_filename, info_filename, destiny_filename, 1, false);
-}
+    uint8_t* plain(uint8_t* text, size_t size){
+        auto buffer = (uint8_t *) malloc(sizeof(char) * size);
+        memcpy(buffer,text,size);
+        for (int i = 0; i < size; ++i) {
+            buffer[i] += 0;
+        }
+        return buffer;
+    }
 
-void steg::stegLSB4(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
-    stegLSB(porter_filename, info_filename, destiny_filename, 4, false);
-}
+    void steg::stegLSB1(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
+        stegLSB(porter_filename, info_filename, destiny_filename, 1, false, plain,128);
+    }
 
-void steg::stegLSBE(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
-    stegLSB(porter_filename, info_filename, destiny_filename, 1, true);
-}
+    void steg::stegLSB4(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
+        stegLSB(porter_filename, info_filename, destiny_filename, 4, false, plain,128);
+    }
 
-void steg::dec_stegLSB1(const char* porter_filename, const char* destiny_filename){
-    dec_stegLSB(porter_filename,destiny_filename,1, false);
-}
+    void steg::stegLSBE(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
+        stegLSB(porter_filename, info_filename, destiny_filename, 1, true, plain,128);
+    }
 
-void steg::dec_stegLSB4(const char* porter_filename, const char* destiny_filename){
-    dec_stegLSB(porter_filename,destiny_filename,4,false);
-}
+    void steg::dec_stegLSB1(const char* porter_filename, const char* destiny_filename){
+        dec_stegLSB(porter_filename,destiny_filename,1, false, plain, 128);
+    }
 
-void steg::dec_stegLSBE(const char* porter_filename, const char* destiny_filename){
-    dec_stegLSB(porter_filename,destiny_filename,1, true);
-}
+    void steg::dec_stegLSB4(const char* porter_filename, const char* destiny_filename){
+        dec_stegLSB(porter_filename,destiny_filename,4, false, plain, 128);
+    }
+
+    void steg::dec_stegLSBE(const char* porter_filename, const char* destiny_filename){
+        dec_stegLSB(porter_filename,destiny_filename,1, true, plain, 128);
+    }
+
+    void steg::stegLSB8(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
+        stegLSB(porter_filename, info_filename, destiny_filename, 8, false, plain, 128);
+    }
+
+    void steg::dec_stegLSB8(const char* porter_filename, const char* destiny_filename){
+        dec_stegLSB(porter_filename,destiny_filename,8, false, plain, 128);
+    }

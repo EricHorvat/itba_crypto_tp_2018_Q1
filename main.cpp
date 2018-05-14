@@ -62,7 +62,7 @@ int main( int argc, char **argv) {
         std::cout << elem.first << " = " << elem.second << std::endl;
     }
 
-    steg::stegLSB1("../in/big.bmp","../in/mid.bmp","../out/bigg.bmp");
+    steg::stegLSB1("../in/big.bmp","../in/a2.txt","../out/bigg.bmp");
     steg::dec_stegLSB1("../out/bigg.bmp","../out/midd");
 
     return 0;

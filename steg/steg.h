@@ -23,6 +23,10 @@ public:
 
     static void dec_stegLSBE(const char* porter_filename, const char* destiny_filename);
 
+    static void stegLSB8(const char* porter_filename, const char* info_filename, const char* destiny_filename);
+
+    static void dec_stegLSB8(const char* porter_filename, const char* destiny_filename);
+
 };
 
 
