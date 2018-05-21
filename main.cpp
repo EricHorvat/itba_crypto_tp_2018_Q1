@@ -2,6 +2,7 @@
 #include <string>
 #include <map>
 #include "steg/steg.h"
+#include "steg/plain/plain_steg.h"
 
 void print_help(){
 
@@ -62,8 +63,8 @@ int main( int argc, char **argv) {
         std::cout << elem.first << " = " << elem.second << std::endl;
     }
 
-    steg::stegLSB8("../in/big.bmp","../in/mid.bmp","../out/bigg.bmp");
-    steg::dec_stegLSB8("../out/bigg.bmp","../out/midd");
+    plain_steg::stegLSB1_plain("../in/big.bmp","../in/mid.bmp","../out/bigg.bmp");
+    plain_steg::dec_stegLSB1_plain("../out/bigg.bmp","../out/midd");
 
     return 0;
 }

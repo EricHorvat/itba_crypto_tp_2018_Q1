@@ -11,23 +11,36 @@
 class steg {
 
 public:
-    static void stegLSB1(const char* porter_filename, const char* info_filename, const char* destiny_filename);
 
-    static void dec_stegLSB1(const char* porter_filename, const char* destiny_filename);
+    typedef struct {
+        size_t buffer_size;
 
-    static void stegLSB4(const char* porter_filename, const char* info_filename, const char* destiny_filename);
+        bool is_plain;
 
-    static void dec_stegLSB4(const char* porter_filename, const char* destiny_filename);
+        uint8_t *(*f)(uint8_t *text, size_t buffer_size);
 
-    static void stegLSBE(const char* porter_filename, const char* info_filename, const char* destiny_filename);
+        bool (*compare_sizes)(long porter_size, size_t info_size);
 
-    static void dec_stegLSBE(const char* porter_filename, const char* destiny_filename);
+        size_t (*get_info_c_size)(size_t buffer_size, size_t info_size);
+    } steg_function;
 
-    static void stegLSB8(const char* porter_filename, const char* info_filename, const char* destiny_filename);
+    static void
+    stegLSB(const char *porter_filename, const char *info_filename, const char *destiny_filename, const uint8_t bit_l,
+            const bool is_lsbe, steg::steg_function steg_f);
 
-    static void dec_stegLSB8(const char* porter_filename, const char* destiny_filename);
+    static void
+    dec_stegLSB(const char *porter_filename, const char *destiny_filename, const uint8_t bit_l, const bool is_lsbe,
+                steg::steg_function steg_f);
+
+    static bool lsb1_size_compare(long porter_size, size_t info_size);
+
+    static bool lsb4_size_compare(long porter_size, size_t info_size);
+
+    static bool lsb8_size_compare(long porter_size, size_t info_size);
+
+    static size_t size_with_padding(size_t info_size, size_t buffer_size);
+
+    static size_t size_without_padding(size_t info_size, size_t buffer_size);
 
 };
-
-
 #endif //CRIPTO_TP_STEG_H

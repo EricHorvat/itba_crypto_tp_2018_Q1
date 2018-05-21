@@ -10,18 +10,6 @@
 
 #include <openssl/aes.h>
 
-    typedef struct {
-        size_t buffer_size;
-
-        bool is_plain;
-
-        uint8_t *(*f)(uint8_t *text, size_t buffer_size);
-
-        bool (*compare_sizes)(long porter_size, size_t info_size);
-
-        size_t (*get_info_c_size)(size_t buffer_size, size_t info_size);
-    } steg_function;
-
     using namespace std;
 
     long get_file_size(std::FILE* file){
@@ -80,7 +68,7 @@
     }
 
 
-    void stegLSB(const char* porter_filename, const char* info_filename, const char* destiny_filename, const uint8_t bit_l, const bool is_lsbe, steg_function steg_f) {
+    void steg::stegLSB(const char* porter_filename, const char* info_filename, const char* destiny_filename, const uint8_t bit_l, const bool is_lsbe, steg::steg_function steg_f) {
 
         std::FILE* porter_file = std::fopen(porter_filename,"rb");
         std::FILE* info_file = std::fopen(info_filename,"rb");
@@ -236,7 +224,7 @@
         }
     }
 
-    void dec_stegLSB(const char* porter_filename, const char* destiny_filename, const uint8_t bit_l, const bool is_lsbe, steg_function steg_f) {
+    void steg::dec_stegLSB(const char* porter_filename, const char* destiny_filename, const uint8_t bit_l, const bool is_lsbe, steg::steg_function steg_f) {
 
         std::FILE* porter_file = std::fopen(porter_filename,"rb");
         std::FILE* destiny_file = std::fopen(destiny_filename,"wb");
@@ -328,57 +316,24 @@
 
     }
 
-    size_t size_with_padding(size_t info_size, size_t buffer_size){
+    size_t steg::size_with_padding(size_t info_size, size_t buffer_size){
         size_t size = 9 + info_size;
         size += (-size)%buffer_size;
         return size;
     }
 
-    size_t size_without_padding(size_t info_size, size_t buffer_size){
+    size_t steg::size_without_padding(size_t info_size, size_t buffer_size){
         return info_size;
     }
 
-    uint8_t* plain(uint8_t* text, size_t size){
-        auto buffer = (uint8_t *) malloc(sizeof(char) * size);
-        memcpy(buffer,text,size);
-        for (int i = 0; i < size; ++i) {
-            buffer[i] += 0;
-        }
-        return buffer;
-    }
-
-    bool size_compare(long porter_size, size_t info_size){
+    bool steg::lsb1_size_compare(long porter_size, size_t info_size){
         return info_size * 8L > 3L * (porter_size - 53);
     }
 
-    void steg::stegLSB1(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
-        stegLSB(porter_filename, info_filename, destiny_filename, 1, false, {1,true,plain});
+    bool steg::lsb4_size_compare(long porter_size, size_t info_size){
+        return info_size * 2L > 3L * (porter_size - 53);
     }
 
-    void steg::stegLSB4(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
-        stegLSB(porter_filename, info_filename, destiny_filename, 4, false, {1,true,plain});
-    }
-
-    void steg::stegLSBE(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
-        stegLSB(porter_filename, info_filename, destiny_filename, 1, true, {1,true,plain});
-    }
-
-    void steg::dec_stegLSB1(const char* porter_filename, const char* destiny_filename){
-        dec_stegLSB(porter_filename,destiny_filename,1, false, {1,true,plain,size_compare,size_without_padding});
-    }
-
-    void steg::dec_stegLSB4(const char* porter_filename, const char* destiny_filename){
-        dec_stegLSB(porter_filename,destiny_filename,4, false, {1,true,plain,size_compare,size_without_padding});
-    }
-
-    void steg::dec_stegLSBE(const char* porter_filename, const char* destiny_filename){
-        dec_stegLSB(porter_filename,destiny_filename,1, true, {1,true,plain,size_compare,size_without_padding});
-    }
-
-    void steg::stegLSB8(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
-        stegLSB(porter_filename, info_filename, destiny_filename, 8, false, {1,true,plain,size_compare,size_without_padding});
-    }
-
-    void steg::dec_stegLSB8(const char* porter_filename, const char* destiny_filename){
-        dec_stegLSB(porter_filename,destiny_filename, 8, false, {1,true,plain,size_compare,size_without_padding});
+    bool steg::lsb8_size_compare(long porter_size, size_t info_size){
+        return info_size * 1L > 3L * (porter_size - 53);
     }
