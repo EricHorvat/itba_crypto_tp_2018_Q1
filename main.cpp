@@ -63,7 +63,7 @@ int main( int argc, char **argv) {
     }
 
     steg::stegLSB8("../in/big.bmp","../in/mid.bmp","../out/bigg.bmp");
-    //steg::dec_stegLSB8("../out/bigg.bmp","../out/midd");
+    steg::dec_stegLSB8("../out/bigg.bmp","../out/midd");
 
     return 0;
 }

@@ -11,7 +11,9 @@
 #include <openssl/aes.h>
 
     typedef struct {
-        uint8_t *(*prefix_f)(size_t buffer_size, size_t info_size);
+        size_t buffer_size;
+
+        bool is_plain;
 
         uint8_t *(*f)(uint8_t *text, size_t buffer_size);
 
@@ -78,7 +80,7 @@
     }
 
 
-    void stegLSB(const char* porter_filename, const char* info_filename, const char* destiny_filename, const uint8_t bit_l, const bool is_lsbe, steg_function steg_f, size_t buffersize) {
+    void stegLSB(const char* porter_filename, const char* info_filename, const char* destiny_filename, const uint8_t bit_l, const bool is_lsbe, steg_function steg_f) {
 
         std::FILE* porter_file = std::fopen(porter_filename,"rb");
         std::FILE* info_file = std::fopen(info_filename,"rb");
@@ -91,7 +93,7 @@
         /*CONTROL SIZE*/
         long porter_size = get_file_size(porter_file);
         auto info_size = (uint32_t) get_file_size(info_file);
-        auto info_c_size = steg_f.get_info_c_size(info_size,buffersize);
+        auto info_c_size = steg_f.get_info_c_size(info_size,steg_f.buffer_size);
 
         if (steg_f.compare_sizes(porter_size,info_size)){
             //TODO ERROR
@@ -99,9 +101,12 @@
             exit(1);
         }
 
-        auto porter_buffer = (uint8_t *) malloc(sizeof(uint8_t) * buffersize);
+        auto porter_buffer = (uint8_t *) malloc(sizeof(uint8_t) * steg_f.buffer_size);
         uint8_t* info_buffer;
-        auto c_info_buffer = (uint8_t*) malloc(sizeof(uint8_t) * buffersize);
+        auto c_info_buffer = (uint8_t*) malloc(sizeof(uint8_t) * steg_f.buffer_size);
+
+        auto tmp_size_buffer = (uint8_t*) malloc(sizeof(uint32_t));
+        memcpy(tmp_size_buffer,&info_size,4);
 
         bool pre_size_written = false;
         bool size_written = false;
@@ -123,32 +128,32 @@
         size_t extension_read = 0;
         size_t written = 0;
 
-        porter_buffer = (uint8_t*) malloc(sizeof(uint8_t) * buffersize);
+        porter_buffer = (uint8_t*) malloc(sizeof(uint8_t) * steg_f.buffer_size);
 
         while (!end) {
             if (porter_i == porter_read) {
                 porter_i = 0;
-                porter_read = fread(porter_buffer, 1, buffersize, porter_file);
+                porter_read = fread(porter_buffer, 1, steg_f.buffer_size, porter_file);
                 rrr+=porter_read;
             }
             if (info_i == info_read && more_info) {
                 info_i = 0;
                 info_bit = 0;
                 info_read = 0;
-                info_buffer = (uint8_t*) malloc(sizeof(uint8_t) * buffersize);
+                info_buffer = (uint8_t*) malloc(sizeof(uint8_t) * steg_f.buffer_size);
 
-                while (info_read < buffersize and more_info){
+                while (info_read < steg_f.buffer_size and more_info){
                     if (!pre_size_written){
                         if (pre_size_read != 4 && info_c_size != info_size){
-                            if (buffersize - info_read > 4 - pre_size_read){
+                            if (steg_f.buffer_size - info_read > 4 - pre_size_read){
                                 std::memcpy(info_buffer+info_read,(&info_c_size) + pre_size_read, 4 - pre_size_read);
                                 info_read += 4 - pre_size_read;
                                 pre_size_read = 4;
                             }
                             else{
-                                std::memcpy(info_buffer+info_read,(&info_c_size) + pre_size_read, buffersize - info_read);
-                                pre_size_read += buffersize - info_read;
-                                info_read += buffersize - info_read;
+                                std::memcpy(info_buffer+info_read,(&info_c_size) + pre_size_read, steg_f.buffer_size - info_read);
+                                pre_size_read += steg_f.buffer_size - info_read;
+                                info_read += steg_f.buffer_size - info_read;
                             }
                         }else{
                             pre_size_written = true;
@@ -156,28 +161,30 @@
                     } else if (!size_written){
 
                         if (size_read != 4){
-                            if (buffersize - info_read > 4 - size_read){
-                                std::memcpy(info_buffer+info_read,(&info_size) + size_read, 4 - size_read);
+                            if (steg_f.buffer_size - info_read >= 4 - size_read){
+                                //std::memcpy(info_buffer+info_read,(&info_size) + size_read, 4 - size_read);
+                                std::memcpy(info_buffer+info_read,tmp_size_buffer + size_read, 4 - size_read);
                                 info_read += 4 - size_read;
                                 size_read = 4;
                             }
                             else{
-                                std::memcpy(info_buffer+info_read,(&info_size) + size_read, buffersize - info_read);
-                                size_read += buffersize - info_read;
-                                info_read += buffersize - info_read;
+                                //std::memcpy(info_buffer+info_read,(&info_size) + size_read, steg_f.buffer_size - info_read);
+                                std::memcpy(info_buffer+info_read,tmp_size_buffer + size_read, steg_f.buffer_size - info_read);
+                                size_read += steg_f.buffer_size - info_read;
+                                info_read += steg_f.buffer_size - info_read;
                             }
                         }else{
                             size_written = true;
                         }
 
                     } else if (ftell(info_file) != info_size) {
-                        info_read += fread(info_buffer+info_read, 1, buffersize-info_read, info_file);
+                        info_read += fread(info_buffer+info_read, 1, steg_f.buffer_size-info_read, info_file);
                     } else if (extension.length() > info_written + info_read - info_size - 4) {
                         size_t i = 0;
-                        if (buffersize >= info_read + extension.length() - extension_read) {
+                        if (steg_f.buffer_size >= info_read + extension.length() - extension_read) {
                             i = extension.length() - extension_read;
                         } else {
-                            i = buffersize - info_read;
+                            i = steg_f.buffer_size - info_read;
                         }
                         std::memcpy(info_buffer + info_read, extension_c_str + extension_read,i);
                         info_read += i;
@@ -191,7 +198,7 @@
                     }
                 }
                 if(more_info) {
-                    c_info_buffer = (steg_f.f)(info_buffer, buffersize);
+                    c_info_buffer = (steg_f.f)(info_buffer, steg_f.buffer_size);
                 }
             }
 
@@ -229,7 +236,7 @@
         }
     }
 
-    void dec_stegLSB(const char* porter_filename, const char* destiny_filename, const uint8_t bit_l, const bool is_lsbe, uint8_t* (*dec_f)(uint8_t*,size_t), size_t buffersize) {
+    void dec_stegLSB(const char* porter_filename, const char* destiny_filename, const uint8_t bit_l, const bool is_lsbe, steg_function steg_f) {
 
         std::FILE* porter_file = std::fopen(porter_filename,"rb");
         std::FILE* destiny_file = std::fopen(destiny_filename,"wb");
@@ -237,20 +244,24 @@
         long porter_size = get_file_size(porter_file);
 
         auto tmp_porter_buffer = (uint8_t *) malloc(sizeof(char) * 54);
-        auto porter_buffer = (uint8_t *) malloc(sizeof(char) * 8);
+        auto porter_buffer = (uint8_t *) malloc(sizeof(char) * steg_f.buffer_size);
         auto size_buffer = (uint8_t *) malloc(sizeof(char) * 4);
 
-        /*********/auto info_buffer = (uint8_t *) malloc(sizeof(char) * buffersize);
-        /*********/auto dec_buffer = (uint8_t *) malloc(sizeof(char) * buffersize);
+        /*********/auto info_buffer = (uint8_t *) malloc(sizeof(char) * steg_f.buffer_size);
+        /*********/auto dec_buffer = (uint8_t *) malloc(sizeof(char) * steg_f.buffer_size);
 
         size_t size_i = 0;
+        size_t size_c_i = 0;
 
         size_t porter_read = fread(tmp_porter_buffer,1,54,porter_file);
 
         size_t info_bit = 0;
 
         size_t file_size = 0;
+        size_t file_c_size = 0;
         size_t written = 0;
+
+        bool size_c_read = steg_f.is_plain;
 
         bool end = false;
         uint8_t to_write_byte;
@@ -262,10 +273,6 @@
         while (!end) {
             porter_read = fread(porter_buffer, 1, 1, porter_file);
 
-            /***************************************
-                        TODO READ SIZE PREV F
-            ***************************************/
-
             uint8_t porter_aux = porter_buffer[0];
             if (( !is_lsbe || (porter_aux&0xFE) == 0xFE)) {
 
@@ -273,12 +280,23 @@
                 info_bit += bit_l;
                 if (info_bit == 8){
                     info_bit = 0;
-                    memcpy(info_buffer+buffer_index,&info_aux,1);
-                    buffer_index++;
-                    if(buffer_index == buffersize){
+                    if (not steg_f.is_plain and size_c_i < 4) {
+                        size_buffer[size_c_i] = info_aux;
+                        size_c_i++;
+                        if(size_c_i == 4){
+                            file_c_size = *((uint32_t *) size_buffer);
+                            size_c_read = true;
+                            size_buffer = (uint8_t *) malloc(sizeof(char) * 4);
+                        }
+                    } else {
+                        memcpy(info_buffer+buffer_index,&info_aux,1);
+                        buffer_index++;
+                    }
+                    if(size_c_read and buffer_index == steg_f.buffer_size){
+                        buffer_index = 0;
                         int dec_index = 0;
-                        dec_buffer = dec_f(info_buffer,buffersize);
-                        while (dec_index != buffersize) {
+                        dec_buffer = (steg_f.f)(info_buffer,steg_f.buffer_size);
+                        while (dec_index != steg_f.buffer_size) {
                             to_write_byte = *(dec_buffer+dec_index);
                             if (size_i < 4) {
                                 std::memcpy((void *) (size_buffer + size_i), &to_write_byte, sizeof(uint8_t));
@@ -298,7 +316,6 @@
                     info_aux = 0;
                 }
             }
-
         }
 
         fclose(porter_file);
@@ -309,10 +326,6 @@
 
         rename(destiny_filename,dest.c_str());
 
-    }
-
-    uint8_t* empty(size_t info_size, size_t buffer_size){
-        return nullptr;
     }
 
     size_t size_with_padding(size_t info_size, size_t buffer_size){
@@ -339,33 +352,33 @@
     }
 
     void steg::stegLSB1(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
-        stegLSB(porter_filename, info_filename, destiny_filename, 1, false, {empty,plain},128);
+        stegLSB(porter_filename, info_filename, destiny_filename, 1, false, {1,true,plain});
     }
 
     void steg::stegLSB4(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
-        stegLSB(porter_filename, info_filename, destiny_filename, 4, false, {empty,plain},128);
+        stegLSB(porter_filename, info_filename, destiny_filename, 4, false, {1,true,plain});
     }
 
     void steg::stegLSBE(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
-        stegLSB(porter_filename, info_filename, destiny_filename, 1, true, {empty,plain},128);
+        stegLSB(porter_filename, info_filename, destiny_filename, 1, true, {1,true,plain});
     }
 
     void steg::dec_stegLSB1(const char* porter_filename, const char* destiny_filename){
-        dec_stegLSB(porter_filename,destiny_filename,1, false, plain, 128);
+        dec_stegLSB(porter_filename,destiny_filename,1, false, {1,true,plain,size_compare,size_without_padding});
     }
 
     void steg::dec_stegLSB4(const char* porter_filename, const char* destiny_filename){
-        dec_stegLSB(porter_filename,destiny_filename,4, false, plain, 128);
+        dec_stegLSB(porter_filename,destiny_filename,4, false, {1,true,plain,size_compare,size_without_padding});
     }
 
     void steg::dec_stegLSBE(const char* porter_filename, const char* destiny_filename){
-        dec_stegLSB(porter_filename,destiny_filename,1, true, plain, 128);
+        dec_stegLSB(porter_filename,destiny_filename,1, true, {1,true,plain,size_compare,size_without_padding});
     }
 
     void steg::stegLSB8(const char* porter_filename, const char* info_filename, const char* destiny_filename) {
-        stegLSB(porter_filename, info_filename, destiny_filename, 8, false, {empty,plain,size_compare,size_without_padding}, 1);
+        stegLSB(porter_filename, info_filename, destiny_filename, 8, false, {1,true,plain,size_compare,size_without_padding});
     }
 
     void steg::dec_stegLSB8(const char* porter_filename, const char* destiny_filename){
-        dec_stegLSB(porter_filename,destiny_filename,8, false, plain, 128);
+        dec_stegLSB(porter_filename,destiny_filename, 8, false, {1,true,plain,size_compare,size_without_padding});
     }
