@@ -3,6 +3,8 @@
 #include <map>
 #include "steg/steg.h"
 #include "steg/plain/plain_steg.h"
+#include "steg/des/steg_des.h"
+#include "steg/aes/aes_steg.h"
 
 void print_help(){
 
@@ -65,6 +67,10 @@ int main( int argc, char **argv) {
 
     plain_steg::stegLSB1_plain("../in/big.bmp","../in/mid.bmp","../out/bigg.bmp");
     plain_steg::dec_stegLSB1_plain("../out/bigg.bmp","../out/midd");
+    steg_des::stegLSB1_des("../in/big.bmp","../in/mid.bmp","../out/biggDES.bmp");
+    steg_des::dec_stegLSB1_des("../out/biggDES.bmp","../out/middDES");
+    steg_aes::stegLSB1_aes("../in/big.bmp","../in/mid.bmp","../out/biggAES.bmp");
+    steg_aes::dec_stegLSB1_aes("../out/biggAES.bmp","../out/middAES");
 
     return 0;
 }
