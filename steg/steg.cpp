@@ -12,20 +12,11 @@
 
 using namespace std;
 
-unsigned char *
-padding(unsigned char *in, int *inl, size_t blocksize)
-{
-    int pad;
-    int i;
-    unsigned char *inPad;
-    pad = blocksize - (*inl) % blocksize;
-    inPad = (unsigned char*) malloc(*inl + pad);
-    memcpy(inPad, in, *inl);
-    for (i = (*inl); i < (*inl + pad); i++)
-        inPad[i] = pad;
-    *inl +=pad;
-    return (inPad);
-}
+    bool (*steg::compare_sizes_lsbe [])(long,size_t) = {steg::lsb1_size_compare,steg::lsb4_size_compare,steg::lsb1_size_compare,steg::lsb8_size_compare};
+
+    bool steg::is_lsbe[] = {false, false, true, false};
+    uint8_t steg::lsb_bits[] = {1, 4, 1, 8};
+
 
     long get_file_size(std::FILE* file){
         long size;

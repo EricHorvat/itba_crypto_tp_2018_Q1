@@ -9,21 +9,10 @@
 class plain_steg {
 
 public:
-    static void stegLSB1_plain(const char* porter_filename, const char* info_filename, const char* destiny_filename);
 
-    static void dec_stegLSB1_plain(const char* porter_filename, const char* destiny_filename);
+    static void plain_enc(int lsbe_mode, const char* porter_filename, const char* info_filename, const char* destiny_filename);
 
-    static void stegLSB4_plain(const char* porter_filename, const char* info_filename, const char* destiny_filename);
-
-    static void dec_stegLSB4_plain(const char* porter_filename, const char* destiny_filename);
-
-    static void stegLSBE_plain(const char* porter_filename, const char* info_filename, const char* destiny_filename);
-
-    static void dec_stegLSBE_plain(const char* porter_filename, const char* destiny_filename);
-
-    static void stegLSB8_plain(const char* porter_filename, const char* info_filename, const char* destiny_filename);
-
-    static void dec_stegLSB8_plain(const char* porter_filename, const char* destiny_filename);
+    static void plain_dec(int lsbe_mode, const char* porter_filename, const char* destiny_filename);
 };
 
 

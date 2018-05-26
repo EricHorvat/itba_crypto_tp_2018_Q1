@@ -9,21 +9,10 @@
 class steg_des {
 
     public:
-        static void stegLSB1_des(const char* porter_filename, const char* info_filename, const char* destiny_filename);
 
-        static void dec_stegLSB1_des(const char* porter_filename, const char* destiny_filename);
+        static void des_enc(int lsbe_mode, int mode, const char* porter_filename, const char* info_filename, const char* destiny_filename);
 
-        static void stegLSB4_des(const char* porter_filename, const char* info_filename, const char* destiny_filename);
-
-        static void dec_stegLSB4_des(const char* porter_filename, const char* destiny_filename);
-
-        static void stegLSBE_des(const char* porter_filename, const char* info_filename, const char* destiny_filename);
-
-        static void dec_stegLSBE_des(const char* porter_filename, const char* destiny_filename);
-
-        static void stegLSB8_des(const char* porter_filename, const char* info_filename, const char* destiny_filename);
-
-        static void dec_stegLSB8_des(const char* porter_filename, const char* destiny_filename);
+        static void des_dec(int lsbe_mode, int mode,const char* porter_filename, const char* destiny_filename);
 
 };
 

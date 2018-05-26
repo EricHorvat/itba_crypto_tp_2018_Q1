@@ -13,6 +13,7 @@ void print_help(){
 
 int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map) {
 
+    bool error = false;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "-embed") {
@@ -24,8 +25,7 @@ int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map)
                     std::clog << "WARN: -embed argument passed more than once" << std::endl;
                 }else {
                     std::cerr << "ERR: Both -embed and -extract argument passed" << std::endl;
-                    print_help();
-                    std::exit(1);
+                    error = true;
                 }
             }
         } else if (arg == "-extract") {
@@ -37,8 +37,7 @@ int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map)
                     std::clog << "WARN: -embed argument passed more than once" << std::endl;
                 }else {
                     std::cerr << "ERR: Both -embed and -extract argument passed" << std::endl;
-                    print_help();
-                    std::exit(1);
+                    error = true;
                 }
             }
         } else if (arg == "-in" || arg == "-out" || arg == "-p" || arg == "-m" || arg == "-a" || arg == "-pass" ||
@@ -48,10 +47,105 @@ int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map)
             }
             else {
                 std::cerr << "ERR: Argument " << arg <<" passed more than once" << std::endl;
-                print_help();
-                std::exit(1);
+                error = true;
             }
             i++;
+        }
+    }
+
+    std::map<std::string,std::string> ready_map = (*arg_map);
+
+    if(ready_map["mode"] == ""){
+        error = true;
+        std::cerr << "ERR: No 'mode' argument passed" << std::endl;
+    }else if(ready_map["mode"] == "embed" and ready_map["-in"] == ""){
+        error = true;
+        std::cerr << "ERR: embed 'mode' argument passed but no 'in' filename passed" << std::endl;
+    }
+
+    if(ready_map["-steg"] == ""){
+        error = true;
+        std::cerr << "ERR: No 'steg' argument passed" << std::endl;
+    }
+    if(ready_map["-p"] == ""){
+        error = true;
+        std::cerr << "ERR: No porter filename argument passed" << std::endl;
+    }
+    if(ready_map["-out"] == ""){
+        error = true;
+        std::cerr << "ERR: No out filename argument passed" << std::endl;
+    }
+    if(ready_map["-a"] == ""){
+        if (ready_map["-m"] != "") {
+            error = true;
+            std::cerr << "ERR: 'm' argument passed but lacks of 'a' argument " << std::endl;
+        }
+    }else if (ready_map["-m"] == ""){
+        error = true;
+        std::cerr << "ERR: 'a' argument passed but lacks of 'm' argument " << std::endl;
+    }
+    if(ready_map["-pass"] == ""){
+        (*arg_map)["-pass"] = "pass";
+    }
+
+    if(error){
+        print_help();
+        exit(1);
+    }
+}
+
+void run(std::map<std::string,std::string> parsed_arg){
+    //std::string mode, std::string in, std::string out,std::string porter, std::string steg, std::string f, std::string a, std::string pass
+
+    int f_i = -1;
+    int lsb_i = -1;
+    const char* porter = parsed_arg["-p"].c_str();
+    const char* in = parsed_arg["-in"].c_str();
+    const char* out = parsed_arg["-out"].c_str();
+
+    if(parsed_arg["-m"] == "cbc"){
+        f_i = CBC;
+    }else if(parsed_arg["-m"] == "cfb"){
+        f_i = CFB;
+    }else if(parsed_arg["-m"] == "ecb"){
+        f_i = ECB;
+    }else if(parsed_arg["-m"] == "ofb"){
+        f_i = OFB;
+    }
+
+    if(parsed_arg["-steg"] == "LSB1"){
+        lsb_i = LSB1;
+    }else if(parsed_arg["-steg"] == "LSB4"){
+        lsb_i = LSB4;
+    }else if(parsed_arg["-steg"] == "LSBE"){
+        lsb_i = LSBE;
+    }else if(parsed_arg["-steg"] == "LSB8"){
+        lsb_i = LSB8;
+    }
+
+    if(parsed_arg["mode"] == "embed"){
+        if(parsed_arg["-a"] == ""){
+            plain_steg::plain_enc(lsb_i,porter,in,out);
+        }else if(parsed_arg["-a"] == "des"){
+            steg_des::des_enc(lsb_i,f_i,porter,in,out);
+        }else if(parsed_arg["-a"] == "aes128"){
+            steg_aes::aes_enc(lsb_i,f_i,128,porter,in,out);
+        }else if(parsed_arg["-a"] == "aes192"){
+            steg_aes::aes_enc(lsb_i,f_i,192,porter,in,out);
+        }else if(parsed_arg["-a"] == "aes256"){
+            steg_aes::aes_enc(lsb_i,f_i,256,porter,in,out);
+        }
+    }else if (parsed_arg["mode"] == "extract"){
+        if(parsed_arg["-a"] == ""){
+            plain_steg::plain_dec(lsb_i,porter,out);
+        }else if(parsed_arg["-a"] == "des"){
+            steg_des::des_dec(lsb_i,f_i,porter,out);
+        }else if(parsed_arg["-a"] == "aes128"){
+            steg_aes::aes_dec(lsb_i,f_i,128,porter,out);
+        }else if(parsed_arg["-a"] == "aes192"){
+            steg_aes::aes_dec(lsb_i,f_i,192,porter,out);
+        }else if(parsed_arg["-a"] == "aes256"){
+            steg_aes::aes_dec(lsb_i,f_i,256,porter,out);
         }
     }
 }
@@ -65,12 +159,14 @@ int main( int argc, char **argv) {
         std::cout << elem.first << " = " << elem.second << std::endl;
     }
 
-    plain_steg::stegLSB1_plain("../in/big.bmp","../in/mid.bmp","../out/bigg.bmp");
-    plain_steg::dec_stegLSB1_plain("../out/bigg.bmp","../out/midd");
-    steg_des::stegLSB1_des("../in/big.bmp","../in/mid.bmp","../out/biggDES.bmp");
-    steg_des::dec_stegLSB1_des("../out/biggDES.bmp","../out/middDES");
-    steg_aes::stegLSB1_aes("../in/big.bmp","../in/mid.bmp","../out/biggAES.bmp");
-    steg_aes::dec_stegLSB1_aes("../out/biggAES.bmp","../out/middAES");
+    //plain_steg::plain_enc(LSBE,"../in/big.bmp","../in/mid.bmp","../out/bigg.bmp");
+    //plain_steg::plain_dec(LSBE,"../out/bigg.bmp","../out/midd");
+    //steg_des::des_enc(LSBE,OFB,"../in/big.bmp","../in/mid.bmp","../out/biggDES.bmp");
+    //steg_des::des_dec(LSBE,OFB,"../out/biggDES.bmp","../out/middDES");
+    steg_aes::aes_enc(LSB1,CFB,128,"../in/big.bmp","../in/mid.bmp","../out/biggAES.bmp");
+    steg_aes::aes_dec(LSB1,CFB,128,"../out/biggAES.bmp","../out/middAES");
+
+    //run(parsed_arg);
 
     return 0;
 }
