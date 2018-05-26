@@ -55,36 +55,38 @@ int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map)
 
     std::map<std::string,std::string> ready_map = (*arg_map);
 
-    if(ready_map["mode"] == ""){
+
+
+    if(ready_map["mode"].empty()){
         error = true;
         std::cerr << "ERR: No 'mode' argument passed" << std::endl;
-    }else if(ready_map["mode"] == "embed" and ready_map["-in"] == ""){
+    }else if(ready_map["mode"] == "embed" and ready_map["-in"].empty()){
         error = true;
         std::cerr << "ERR: embed 'mode' argument passed but no 'in' filename passed" << std::endl;
     }
 
-    if(ready_map["-steg"] == ""){
+    if(ready_map["-steg"].empty()){
         error = true;
         std::cerr << "ERR: No 'steg' argument passed" << std::endl;
     }
-    if(ready_map["-p"] == ""){
+    if(ready_map["-p"].empty()){
         error = true;
         std::cerr << "ERR: No porter filename argument passed" << std::endl;
     }
-    if(ready_map["-out"] == ""){
+    if(ready_map["-out"].empty()){
         error = true;
         std::cerr << "ERR: No out filename argument passed" << std::endl;
     }
-    if(ready_map["-a"] == ""){
-        if (ready_map["-m"] != "") {
+    if(ready_map["-a"].empty()){
+        if (!ready_map["-m"].empty()) {
             error = true;
             std::cerr << "ERR: 'm' argument passed but lacks of 'a' argument " << std::endl;
         }
-    }else if (ready_map["-m"] == ""){
+    }else if (ready_map["-m"].empty()){
         error = true;
         std::cerr << "ERR: 'a' argument passed but lacks of 'm' argument " << std::endl;
     }
-    if(ready_map["-pass"] == ""){
+    if(ready_map["-pass"].empty()){
         (*arg_map)["-pass"] = "pass";
     }
 
@@ -124,7 +126,7 @@ void run(std::map<std::string,std::string> parsed_arg){
     }
 
     if(parsed_arg["mode"] == "embed"){
-        if(parsed_arg["-a"] == ""){
+        if(parsed_arg["-a"].empty()){
             plain_steg::plain_enc(lsb_i,porter,in,out);
         }else if(parsed_arg["-a"] == "des"){
             steg_des::des_enc(lsb_i,f_i,porter,in,out);
@@ -136,7 +138,7 @@ void run(std::map<std::string,std::string> parsed_arg){
             steg_aes::aes_enc(lsb_i,f_i,256,porter,in,out);
         }
     }else if (parsed_arg["mode"] == "extract"){
-        if(parsed_arg["-a"] == ""){
+        if(parsed_arg["-a"].empty()){
             plain_steg::plain_dec(lsb_i,porter,out);
         }else if(parsed_arg["-a"] == "des"){
             steg_des::des_dec(lsb_i,f_i,porter,out);
