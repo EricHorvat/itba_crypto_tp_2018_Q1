@@ -21,6 +21,7 @@ uint8_t* enc_des_cfb(uint8_t* text, size_t size, void *data){
     auto buffer = (uint8_t *) malloc(sizeof(char) * size);
     DES_cblock iv ="8765432";
 
+    //https://blog.fpmurphy.com/2010/04/openssl-des-api.html
     DES_cfb_encrypt(text,buffer,1,size,ks,&iv,DES_ENCRYPT);
     return buffer;
 }
@@ -38,6 +39,7 @@ uint8_t* enc_des_ofb(uint8_t* text, size_t size, void *data){
     auto buffer = (uint8_t *) malloc(sizeof(char) * size);
     DES_cblock iv ="8765432";
 
+    //https://blog.fpmurphy.com/2010/04/openssl-des-api.html 
     DES_ofb_encrypt(text,buffer,8,size,ks,&iv);
     return buffer;
 }
@@ -54,6 +56,7 @@ uint8_t* dec_des_cfb(uint8_t* text, size_t size, void *data){
     auto buffer = (uint8_t *) malloc(sizeof(char) * size);
     DES_cblock iv ="8765432";
 
+    //https://blog.fpmurphy.com/2010/04/openssl-des-api.html
     DES_cfb_encrypt(text,buffer,1,size,ks,&iv,DES_DECRYPT);
     return buffer;
 }
@@ -71,6 +74,7 @@ uint8_t* dec_des_ofb(uint8_t* text, size_t size, void *data){
     auto buffer = (uint8_t *) malloc(sizeof(char) * size);
     DES_cblock iv ="8765432";
 
+    //https://blog.fpmurphy.com/2010/04/openssl-des-api.html
     DES_ofb_encrypt(text,buffer,8,size,ks,&iv);
     return buffer;
 }
