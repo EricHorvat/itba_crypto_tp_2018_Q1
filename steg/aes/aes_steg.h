@@ -5,8 +5,18 @@
 #ifndef CRIPTO_TP_AES_STEG_H
 #define CRIPTO_TP_AES_STEG_H
 
+#define AES128 0
+#define AES192 1
+#define AES256 2
 
-class aes_steg {
+
+class steg_aes {
+
+public:
+
+    static void aes_enc(int lsbe_mode, int mode, int bits, const char* porter_filename, const char* info_filename, const char* destiny_filename);
+
+    static void aes_dec(int lsbe_mode, int mode, int bits, const char* porter_filename, const char* destiny_filename);
 
 };
 
