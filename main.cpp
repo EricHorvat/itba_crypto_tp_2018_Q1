@@ -87,7 +87,7 @@ int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map)
         std::cerr << "ERR: 'a' argument passed but lacks of 'm' argument " << std::endl;
     }
     if(ready_map["-pass"].empty()){
-        (*arg_map)["-pass"] = "pass";
+        (*arg_map)["-pass"] = "";
     }
 
     if(error){
