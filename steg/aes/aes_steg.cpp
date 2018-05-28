@@ -43,7 +43,6 @@ uint8_t* enc_aes_f(uint8_t* text, size_t size, void *data){
     EVP_CIPHER_CTX_init(&ctx);
     EVP_EncryptInit_ex(&ctx, f_array[bits][aes_data->mode], NULL, k, iv);
     EVP_EncryptUpdate(&ctx, buffer, &outl, text, size);
-    printf("Encripta primero %d bytes\n",outl);
     EVP_EncryptFinal(&ctx, buffer + outl, &templ);
     EVP_CIPHER_CTX_cleanup(&ctx);
 
