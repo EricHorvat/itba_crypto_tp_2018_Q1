@@ -10,9 +10,9 @@ class steg_des {
 
     public:
 
-        static void des_enc(int lsbe_mode, int mode, const char* porter_filename, const char* info_filename, const char* destiny_filename);
+        static void des_enc(int lsbe_mode, int mode, unsigned char* pass, const char* porter_filename, const char* info_filename, const char* destiny_filename);
 
-        static void des_dec(int lsbe_mode, int mode,const char* porter_filename, const char* destiny_filename);
+        static void des_dec(int lsbe_mode, int mode, unsigned char* pass, const char* porter_filename, const char* destiny_filename);
 
 };
 

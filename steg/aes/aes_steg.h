@@ -14,9 +14,9 @@ class steg_aes {
 
 public:
 
-    static void aes_enc(int lsbe_mode, int mode, int bits, const char* porter_filename, const char* info_filename, const char* destiny_filename);
+    static void aes_enc(int lsbe_mode, int mode, int bits, unsigned char* pass, const char* porter_filename, const char* info_filename, const char* destiny_filename);
 
-    static void aes_dec(int lsbe_mode, int mode, int bits, const char* porter_filename, const char* destiny_filename);
+    static void aes_dec(int lsbe_mode, int mode, int bits, unsigned char* pass, const char* porter_filename, const char* destiny_filename);
 
 };
 

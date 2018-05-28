@@ -4,132 +4,83 @@
 
 #include <cstring>
 #include <openssl/des.h>
+#include <openssl/evp.h>
 #include "../steg.h"
 
 #include "steg_des.h"
 
-uint8_t* enc_des_cbc(uint8_t* text, size_t size, void *data){
-    DES_key_schedule *ks = ((DES_key_schedule*)data);
-    auto buffer = (uint8_t *) malloc(sizeof(char) * size);
-    DES_cblock iv ="8765432";
+typedef struct {
+    int mode;
+    unsigned char * pass;
+} DES_DATA;
 
-    DES_ncbc_encrypt(text,buffer,size,ks,&iv,DES_ENCRYPT);
-    return buffer;
-}
-uint8_t* enc_des_cfb(uint8_t* text, size_t size, void *data){
-    DES_key_schedule *ks = ((DES_key_schedule*)data);
-    auto buffer = (uint8_t *) malloc(sizeof(char) * size);
-    DES_cblock iv ="8765432";
+const EVP_CIPHER* des_f_array[] = {EVP_des_cbc(),EVP_des_cfb8(),EVP_des_ecb(),EVP_des_ofb()};
 
-    //https://blog.fpmurphy.com/2010/04/openssl-des-api.html
-    DES_cfb_encrypt(text,buffer,1,size,ks,&iv,DES_ENCRYPT);
-    return buffer;
-}
-uint8_t* enc_des_ecb(uint8_t* text, size_t size, void *data){
-    DES_key_schedule *ks = ((DES_key_schedule*)data);
+uint8_t* enc_des_f(uint8_t* text, size_t size, void *data){
+    auto des_data = (DES_DATA*)data;
     auto buffer = (uint8_t *) malloc(sizeof(char) * size);
-    DES_cblock iv ="8765432";
+    unsigned char iv[8];// = "01234567\0";
+    auto *k = (unsigned char *) malloc(8);
+    int outl, templ, passl = strlen((const char*)des_data->pass);
 
-    //DES_ofb_encrypt(text,buffer,size,ks,&iv,DES_ENCRYPT);
-    exit(8);
-    return buffer;
-}
-uint8_t* enc_des_ofb(uint8_t* text, size_t size, void *data){
-    DES_key_schedule *ks = ((DES_key_schedule*)data);
-    auto buffer = (uint8_t *) malloc(sizeof(char) * size);
-    DES_cblock iv ="8765432";
+    EVP_CIPHER_CTX ctx;
+    EVP_CIPHER_CTX_init(&ctx);
+    EVP_BytesToKey(des_f_array[des_data->mode], EVP_md5(), nullptr, des_data->pass,passl,1,k,iv);
+    EVP_EncryptInit_ex(&ctx, des_f_array[des_data->mode], NULL, k, iv);
+    EVP_EncryptUpdate(&ctx, buffer, &outl, text, size);
+    EVP_EncryptFinal(&ctx, buffer + outl, &templ);
+    EVP_CIPHER_CTX_cleanup(&ctx);
 
-    //https://blog.fpmurphy.com/2010/04/openssl-des-api.html 
-    DES_ofb_encrypt(text,buffer,8,size,ks,&iv);
-    return buffer;
-}
-uint8_t* dec_des_cbc(uint8_t* text, size_t size, void *data){
-    DES_key_schedule *ks = ((DES_key_schedule*)data);
-    auto buffer = (uint8_t *) malloc(sizeof(char) * size);
-    DES_cblock iv ="8765432";
-
-    DES_ncbc_encrypt(text,buffer,size,ks,&iv,DES_DECRYPT);
-    return buffer;
-}
-uint8_t* dec_des_cfb(uint8_t* text, size_t size, void *data){
-    DES_key_schedule *ks = ((DES_key_schedule*)data);
-    auto buffer = (uint8_t *) malloc(sizeof(char) * size);
-    DES_cblock iv ="8765432";
-
-    //https://blog.fpmurphy.com/2010/04/openssl-des-api.html
-    DES_cfb_encrypt(text,buffer,1,size,ks,&iv,DES_DECRYPT);
-    return buffer;
-}
-uint8_t* dec_des_ecb(uint8_t* text, size_t size, void *data){
-    DES_key_schedule *ks = ((DES_key_schedule*)data);
-    auto buffer = (uint8_t *) malloc(sizeof(char) * size);
-    DES_cblock iv ="8765432";
-
-    //DES_ofb_encrypt(text,buffer,size,ks,&iv,DES_DECRYPT);
-    exit(8);
-    return buffer;
-}
-uint8_t* dec_des_ofb(uint8_t* text, size_t size, void *data){
-    DES_key_schedule *ks = ((DES_key_schedule*)data);
-    auto buffer = (uint8_t *) malloc(sizeof(char) * size);
-    DES_cblock iv ="8765432";
-
-    //https://blog.fpmurphy.com/2010/04/openssl-des-api.html
-    DES_ofb_encrypt(text,buffer,8,size,ks,&iv);
     return buffer;
 }
 
-uint8_t* dec_des(uint8_t* text, size_t size, void* data){
-    DES_key_schedule *ks = ((DES_key_schedule*)data);
+uint8_t* dec_des_f(uint8_t* text, size_t size, void *data){
+    auto des_data = (DES_DATA*)data;
     auto buffer = (uint8_t *) malloc(sizeof(char) * size);
-    DES_cblock iv ="8765432";
+    unsigned char iv[8];// = "0123456789012345\0";
+    auto *k = (unsigned char *) malloc(8);
+    int outl, templ, passl = strlen((const char*)des_data->pass);
 
-    DES_ncbc_encrypt(text,buffer,size,ks,&iv,DES_DECRYPT);
-    //for (int i = 0; i < size; ++i) {
-    //    buffer[i] += 0;
-    //}
+    EVP_CIPHER_CTX ctx;
+    EVP_CIPHER_CTX_init(&ctx);
+    EVP_BytesToKey(des_f_array[des_data->mode], EVP_md5(), nullptr, des_data->pass,passl,1,k,iv);
+    EVP_DecryptInit_ex(&ctx, des_f_array[des_data->mode], NULL, k, iv);
+    EVP_DecryptUpdate(&ctx, buffer, &outl, text, size);
+    EVP_DecryptFinal(&ctx, buffer + outl, &templ);
+    EVP_CIPHER_CTX_cleanup(&ctx);
+
     return buffer;
 }
 
-uint8_t* (*des_f_enc [])(uint8_t *text, size_t buffer_size, void* data) = {enc_des_cbc,enc_des_cfb,enc_des_ecb,enc_des_ofb};
-uint8_t* (*des_f_dec [])(uint8_t *text, size_t buffer_size, void* data) = {dec_des_cbc,dec_des_cfb,dec_des_ecb,dec_des_ofb};
 
-void steg_des::des_enc(int lsb_mode, int mode, const char* porter_filename, const char* info_filename, const char* destiny_filename){
+void steg_des::des_enc(int lsb_mode, int mode, unsigned char* pass, const char* porter_filename, const char* info_filename, const char* destiny_filename){
 
-    DES_cblock k = "1234567";
-    DES_key_schedule ks;
-    /* Setear paridad impar*/
-    DES_set_odd_parity(&k);
-    /* Setear key schedule*/
-    DES_set_key_checked(&k, &ks);
+    DES_DATA des_data = {mode,pass};
+
     steg::steg_function steg_f = {
-            8, //buffer_size => 64bits = 8 bytes
+            16, //buffer_size => 128bits = 16 bytes
             false, //is_plain
-            des_f_enc[mode],
+            enc_des_f,
             steg::compare_sizes_lsbe[lsb_mode],
             steg::size_with_padding,
-            &ks
+            &des_data
     };
 
     steg::stegLSB(porter_filename,info_filename,destiny_filename, steg::lsb_bits[lsb_mode], steg::is_lsbe[lsb_mode], steg_f);
 }
 
-void steg_des::des_dec(int lsb_mode, int mode, const char* porter_filename, const char* destiny_filename){
+void steg_des::des_dec(int lsb_mode, int mode, unsigned char* pass, const char* porter_filename, const char* destiny_filename){
 
-    DES_cblock k = "1234567";
-    DES_key_schedule ks;
-    /* Setear paridad impar*/
-    DES_set_odd_parity(&k);
-    /* Setear key schedule*/
-    DES_set_key_checked(&k, &ks);
+    DES_DATA des_data = {mode,pass};
+
     steg::steg_function steg_f = {
-            8,
-            steg::is_lsbe[lsb_mode],
-            des_f_dec[mode],
+            16, //buffer_size => 128bits = 16 bytes
+            false, //is_plain
+            dec_des_f,
             steg::compare_sizes_lsbe[lsb_mode],
             steg::size_with_padding,
-            &ks
+            &des_data
     };
 
-    steg::dec_stegLSB(porter_filename,destiny_filename, steg::lsb_bits[lsb_mode], false, steg_f);
+    steg::dec_stegLSB(porter_filename,destiny_filename, steg::lsb_bits[lsb_mode], steg::is_lsbe[lsb_mode], steg_f);
 }
