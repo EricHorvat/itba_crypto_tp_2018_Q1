@@ -57,6 +57,7 @@ int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map)
 
 
 
+
     if(ready_map["mode"].empty()){
         error = true;
         std::cerr << "ERR: No 'mode' argument passed" << std::endl;
@@ -77,17 +78,19 @@ int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map)
         error = true;
         std::cerr << "ERR: No out filename argument passed" << std::endl;
     }
-    if(ready_map["-a"].empty()){
-        if (!ready_map["-m"].empty()) {
-            error = true;
-            std::cerr << "ERR: 'm' argument passed but lacks of 'a' argument " << std::endl;
-        }
-    }else if (ready_map["-m"].empty()){
-        error = true;
-        std::cerr << "ERR: 'a' argument passed but lacks of 'm' argument " << std::endl;
-    }
-    if(ready_map["-pass"].empty()){
+    if(ready_map["-pass"].empty()) {
         (*arg_map)["-pass"] = "";
+        if (!ready_map["-a"].empty() or !ready_map["-m"].empty()) {
+            error = true;
+            std::cerr << "ERR: No password argument passed but '-m' or '-a' passed" << std::endl;
+        }
+    }else {
+        if (ready_map["-a"].empty()) {
+            ready_map["-a"] = "aes128";
+        }
+        if (ready_map["-m"].empty()) {
+            ready_map["-m"] = "cbc";
+        }
     }
 
     if(error){
