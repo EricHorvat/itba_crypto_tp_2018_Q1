@@ -11,6 +11,7 @@
 
 typedef struct {
     int mode;
+    unsigned char * pass;
 } DES_DATA;
 
 const EVP_CIPHER* des_f_array[] = {EVP_des_cbc(),EVP_des_cfb8(),EVP_des_ecb(),EVP_des_ofb()};
@@ -18,14 +19,13 @@ const EVP_CIPHER* des_f_array[] = {EVP_des_cbc(),EVP_des_cfb8(),EVP_des_ecb(),EV
 uint8_t* enc_des_f(uint8_t* text, size_t size, void *data){
     auto des_data = (DES_DATA*)data;
     auto buffer = (uint8_t *) malloc(sizeof(char) * size);
-    unsigned char iv[] = "01234567\0";
-    unsigned char *k;
-    int outl, templ;
-
-    k = (unsigned char *) "01234567\0";
+    unsigned char iv[8];// = "01234567\0";
+    auto *k = (unsigned char *) malloc(8);
+    int outl, templ, passl = strlen((const char*)des_data->pass);
 
     EVP_CIPHER_CTX ctx;
     EVP_CIPHER_CTX_init(&ctx);
+    EVP_BytesToKey(des_f_array[des_data->mode], EVP_md5(), nullptr, des_data->pass,passl,1,k,iv);
     EVP_EncryptInit_ex(&ctx, des_f_array[des_data->mode], NULL, k, iv);
     EVP_EncryptUpdate(&ctx, buffer, &outl, text, size);
     EVP_EncryptFinal(&ctx, buffer + outl, &templ);
@@ -37,14 +37,13 @@ uint8_t* enc_des_f(uint8_t* text, size_t size, void *data){
 uint8_t* dec_des_f(uint8_t* text, size_t size, void *data){
     auto des_data = (DES_DATA*)data;
     auto buffer = (uint8_t *) malloc(sizeof(char) * size);
-    unsigned char iv[] = "0123456789012345\0";
-    unsigned char *k;
-    int outl, templ;
-
-    k = (unsigned char *) "01234567\0";
+    unsigned char iv[8];// = "0123456789012345\0";
+    auto *k = (unsigned char *) malloc(8);
+    int outl, templ, passl = strlen((const char*)des_data->pass);
 
     EVP_CIPHER_CTX ctx;
     EVP_CIPHER_CTX_init(&ctx);
+    EVP_BytesToKey(des_f_array[des_data->mode], EVP_md5(), nullptr, des_data->pass,passl,1,k,iv);
     EVP_DecryptInit_ex(&ctx, des_f_array[des_data->mode], NULL, k, iv);
     EVP_DecryptUpdate(&ctx, buffer, &outl, text, size);
     EVP_DecryptFinal(&ctx, buffer + outl, &templ);
@@ -54,9 +53,9 @@ uint8_t* dec_des_f(uint8_t* text, size_t size, void *data){
 }
 
 
-void steg_des::des_enc(int lsb_mode, int mode, const char* porter_filename, const char* info_filename, const char* destiny_filename){
+void steg_des::des_enc(int lsb_mode, int mode, unsigned char* pass, const char* porter_filename, const char* info_filename, const char* destiny_filename){
 
-    DES_DATA des_data = {mode};
+    DES_DATA des_data = {mode,pass};
 
     steg::steg_function steg_f = {
             16, //buffer_size => 128bits = 16 bytes
@@ -70,9 +69,9 @@ void steg_des::des_enc(int lsb_mode, int mode, const char* porter_filename, cons
     steg::stegLSB(porter_filename,info_filename,destiny_filename, steg::lsb_bits[lsb_mode], steg::is_lsbe[lsb_mode], steg_f);
 }
 
-void steg_des::des_dec(int lsb_mode, int mode, const char* porter_filename, const char* destiny_filename){
+void steg_des::des_dec(int lsb_mode, int mode, unsigned char* pass, const char* porter_filename, const char* destiny_filename){
 
-    DES_DATA des_data = {mode};
+    DES_DATA des_data = {mode,pass};
 
     steg::steg_function steg_f = {
             16, //buffer_size => 128bits = 16 bytes

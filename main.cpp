@@ -129,25 +129,25 @@ void run(std::map<std::string,std::string> parsed_arg){
         if(parsed_arg["-a"].empty()){
             plain_steg::plain_enc(lsb_i,porter,in,out);
         }else if(parsed_arg["-a"] == "des"){
-            steg_des::des_enc(lsb_i,f_i,porter,in,out);
+            steg_des::des_enc(lsb_i,f_i,(unsigned char*) (parsed_arg["-pass"].c_str()),porter,in,out);
         }else if(parsed_arg["-a"] == "aes128"){
-            steg_aes::aes_enc(lsb_i,f_i,128,porter,in,out);
+            steg_aes::aes_enc(lsb_i,f_i,128,(unsigned char*) (parsed_arg["-pass"].c_str()),porter,in,out);
         }else if(parsed_arg["-a"] == "aes192"){
-            steg_aes::aes_enc(lsb_i,f_i,192,porter,in,out);
+            steg_aes::aes_enc(lsb_i,f_i,192,(unsigned char*) (parsed_arg["-pass"].c_str()),porter,in,out);
         }else if(parsed_arg["-a"] == "aes256"){
-            steg_aes::aes_enc(lsb_i,f_i,256,porter,in,out);
+            steg_aes::aes_enc(lsb_i,f_i,256,(unsigned char*) (parsed_arg["-pass"].c_str()),porter,in,out);
         }
     }else if (parsed_arg["mode"] == "extract"){
         if(parsed_arg["-a"].empty()){
             plain_steg::plain_dec(lsb_i,porter,out);
         }else if(parsed_arg["-a"] == "des"){
-            steg_des::des_dec(lsb_i,f_i,porter,out);
+            steg_des::des_dec(lsb_i,f_i,(unsigned char*) (parsed_arg["-pass"].c_str()),porter,out);
         }else if(parsed_arg["-a"] == "aes128"){
-            steg_aes::aes_dec(lsb_i,f_i,128,porter,out);
+            steg_aes::aes_dec(lsb_i,f_i,128,(unsigned char*) (parsed_arg["-pass"].c_str()),porter,out);
         }else if(parsed_arg["-a"] == "aes192"){
-            steg_aes::aes_dec(lsb_i,f_i,192,porter,out);
+            steg_aes::aes_dec(lsb_i,f_i,192,(unsigned char*) (parsed_arg["-pass"].c_str()),porter,out);
         }else if(parsed_arg["-a"] == "aes256"){
-            steg_aes::aes_dec(lsb_i,f_i,256,porter,out);
+            steg_aes::aes_dec(lsb_i,f_i,256,(unsigned char*) (parsed_arg["-pass"].c_str()),porter,out);
         }
     }
 }
@@ -161,14 +161,15 @@ int main( int argc, char **argv) {
         std::cout << elem.first << " = " << elem.second << std::endl;
     }
 
-    plain_steg::plain_enc(LSB1,"../in/big.bmp","../in/mid.bmp","../out/bigg.bmp");
-    plain_steg::plain_dec(LSB1,"../out/bigg.bmp","../out/midd");
-    steg_des::des_enc(LSB1,ECB,"../in/big.bmp","../in/mid.bmp","../out/biggDES.bmp");
-    steg_des::des_dec(LSB1,ECB,"../out/biggDES.bmp","../out/middDES");
-    steg_aes::aes_enc(LSB1,ECB,256,"../in/big.bmp","../in/mid.bmp","../out/biggAES.bmp");
-    steg_aes::aes_dec(LSB1,ECB,256,"../out/biggAES.bmp","../out/middAES");
+    //plain_steg::plain_enc(LSB1,"../in/big.bmp","../in/mid.bmp","../out/bigg.bmp");
+    //plain_steg::plain_dec(LSB1,"../out/bigg.bmp","../out/midd");
+    //steg_des::des_enc(LSB1,ECB,"../in/big.bmp","../in/mid.bmp","../out/biggDES.bmp");
+    /*steg_des::des_dec(LSB1,ECB,"../out/biggDES.bmp","../out/middDES");
+    steg_aes::aes_enc(LSB1,ECB,256,(unsigned char*)"","../in/big.bmp","../in/mid.bmp","../out/biggAES.bmp");
+    steg_aes::aes_dec(LSB1,ECB,256,(unsigned char*)"","../out/biggAES.bmp","../out/middAES");
+    /**/
 
-    //run(parsed_arg);
+    run(parsed_arg);
 
     return 0;
 }
