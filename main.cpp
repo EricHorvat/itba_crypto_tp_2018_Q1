@@ -161,12 +161,12 @@ int main( int argc, char **argv) {
         std::cout << elem.first << " = " << elem.second << std::endl;
     }
 
-    //plain_steg::plain_enc(LSBE,"../in/big.bmp","../in/mid.bmp","../out/bigg.bmp");
-    //plain_steg::plain_dec(LSBE,"../out/bigg.bmp","../out/midd");
-    //steg_des::des_enc(LSBE,OFB,"../in/big.bmp","../in/mid.bmp","../out/biggDES.bmp");
-    //steg_des::des_dec(LSBE,OFB,"../out/biggDES.bmp","../out/middDES");
-    steg_aes::aes_enc(LSB1,CFB,128,"../in/big.bmp","../in/mid.bmp","../out/biggAES.bmp");
-    steg_aes::aes_dec(LSB1,CFB,128,"../out/biggAES.bmp","../out/middAES");
+    plain_steg::plain_enc(LSB1,"../in/big.bmp","../in/mid.bmp","../out/bigg.bmp");
+    plain_steg::plain_dec(LSB1,"../out/bigg.bmp","../out/midd");
+    steg_des::des_enc(LSB1,OFB,"../in/big.bmp","../in/mid.bmp","../out/biggDES.bmp");
+    steg_des::des_dec(LSB1,OFB,"../out/biggDES.bmp","../out/middDES");
+    steg_aes::aes_enc(LSB1,ECB,256,"../in/big.bmp","../in/mid.bmp","../out/biggAES.bmp");
+    steg_aes::aes_dec(LSB1,ECB,256,"../out/biggAES.bmp","../out/middAES");
 
     //run(parsed_arg);
 
