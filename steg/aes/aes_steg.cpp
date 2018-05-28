@@ -40,15 +40,15 @@ uint8_t* enc_aes_f(uint8_t* text, size_t size, void *data){
         k = (unsigned char *) malloc(32);
     }
 
-    EVP_CIPHER_CTX ctx;
-    EVP_CIPHER_CTX_init(&ctx);
+    EVP_CIPHER_CTX* ctx;
+    ctx = EVP_CIPHER_CTX_new();
 
-    EVP_BytesToKey(f_array[bits][aes_data->mode], EVP_md5(), nullptr, aes_data->pass,passl,1,k,iv);
+    EVP_BytesToKey(f_array[bits][aes_data->mode], EVP_sha256(), nullptr, aes_data->pass,passl,1,k,iv);
 
-    EVP_EncryptInit_ex(&ctx, f_array[bits][aes_data->mode], NULL, k, iv);
-    EVP_EncryptUpdate(&ctx, buffer, &outl, text, size);
-    EVP_EncryptFinal(&ctx, buffer + outl, &templ);
-    EVP_CIPHER_CTX_cleanup(&ctx);
+    EVP_EncryptInit_ex(ctx, f_array[bits][aes_data->mode], NULL, k, iv);
+    EVP_EncryptUpdate(ctx, buffer, &outl, text, size);
+    EVP_EncryptFinal(ctx, buffer + outl, &templ);
+    EVP_CIPHER_CTX_free(ctx);
 
     return buffer;
 }
@@ -76,17 +76,17 @@ uint8_t* dec_aes_f(uint8_t* text, size_t size, void *data){
         k = (unsigned char *) malloc(32);
     }
 
-    EVP_CIPHER_CTX ctx;
-    EVP_CIPHER_CTX_init(&ctx);
+    EVP_CIPHER_CTX *ctx;
+    ctx = EVP_CIPHER_CTX_new();
 
 
-    EVP_BytesToKey(f_array[bits][aes_data->mode], EVP_md5(), nullptr, aes_data->pass,passl,1,k,iv);
+    EVP_BytesToKey(f_array[bits][aes_data->mode], EVP_sha256(), nullptr, aes_data->pass,passl,1,k,iv);
 
 
-    EVP_DecryptInit_ex(&ctx, f_array[bits][aes_data->mode], NULL, k, iv);
-    EVP_DecryptUpdate(&ctx, buffer, &outl, text, size);
-    EVP_DecryptFinal(&ctx, buffer + outl, &templ);
-    EVP_CIPHER_CTX_cleanup(&ctx);
+    EVP_DecryptInit_ex(ctx, f_array[bits][aes_data->mode], NULL, k, iv);
+    EVP_DecryptUpdate(ctx, buffer, &outl, text, size);
+    EVP_DecryptFinal(ctx, buffer + outl, &templ);
+    EVP_CIPHER_CTX_free(ctx);
 
     return buffer;
 }

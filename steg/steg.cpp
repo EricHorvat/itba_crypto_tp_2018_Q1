@@ -8,6 +8,7 @@
 #include <vector>
 #include "steg.h"
 
+#include <byteswap.h>
 #include <openssl/aes.h>
 
 using namespace std;
@@ -287,10 +288,12 @@ void steg::stegLSB(const char* porter_filename, const char* info_filename, const
 
     size_t pre_size_written_i = 0;
     if(!steg_f.is_plain){
-        memcpy(c_info_buffer,&info_c_size,4);
+        int info_c_size_big = __bswap_32 (info_c_size);
+        memcpy(c_info_buffer,&info_c_size_big,4);
         pre_size_written_i += 4;
     }
-    memcpy(info_buffer,&info_size,4);
+    int info_size_big = __bswap_32(info_size);
+    memcpy(info_buffer,&info_size_big,4);
     while(ftell(info_file) != info_size) {
         info_read += fread(info_buffer + 4 + info_read, 1, info_size - info_read, info_file);
     }
@@ -486,6 +489,7 @@ void steg::dec_stegLSB(const char* porter_filename, const char* destiny_filename
                         size_c_i++;
                         if (size_c_i == 4) {
                             to_read_size = *((uint32_t *) size_buffer);
+                            to_read_size = __bswap_32(to_read_size);
                             to_read_buffer = (uint8_t *) malloc(sizeof(uint8_t) * to_read_size);
                             size_c_read = true;
                             size_buffer = (uint8_t *) malloc(sizeof(char) * 4);
@@ -514,6 +518,7 @@ void steg::dec_stegLSB(const char* porter_filename, const char* destiny_filename
         }else{
             info_buffer = steg_f.f(to_read_buffer,to_read_size,steg_f.data);
             file_size = *((uint32_t *) info_buffer);
+            file_size = __bswap_32(file_size);
             info_buffer += 4;
         }
         fwrite(info_buffer,file_size,1,destiny_file);
