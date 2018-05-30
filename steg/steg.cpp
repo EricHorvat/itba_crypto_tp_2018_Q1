@@ -19,6 +19,63 @@ using namespace std;
     uint8_t steg::lsb_bits[] = {1, 4, 1, 8};
 
 
+
+    uint32_t control_header(uint8_t* header, long file_size) {
+        /*
+         * 0x42 0x4D + BM
+         * Bytes
+         * 0, 1	            "BM" file type
+         * 2, 3, 4, 5	    File size
+         * 6, 7	            Reserved
+         * 8, 9	            Reserved
+         * 10, 11, 12, 13	Picture data begin
+         * 14, 15, 16, 17	Bitmap header size
+         * 18, 19, 20, 21	Length (pixels)
+         * 22, 23, 24, 25	Height (pixels)
+         * 26, 27	        Plane number
+         * 28, 29	        Pixel size
+         * 30, 31, 32, 33	Compressed (0=no compress)
+         * 34, 35, 36, 37	Picture size
+         * 38, 39, 40, 41	Horizontal resolution
+         * 42, 43, 44, 45	Vertical resolution
+         * 46, 47, 48, 49	Palette size
+         * 50, 51, 52, 53	Important colors count
+         */
+        bool error = false;
+        if(header[0] != 0x42 or header[1] != 0x4D){
+            std::cerr << "HEAD_ERROR: Not begin with BM" << std::endl;
+            error = true;
+        }
+        int header_file_size = *((uint32_t*)(header + 2));
+        if( header_file_size != file_size){
+            std::cerr << "HEAD_ERROR: Header file size indicated differ from file size" << std::endl;
+            error = true;
+        }
+        int image_start = *((uint32_t*)(header + 10));
+        if (image_start != 54){
+            std::cerr << "HEAD_ERROR: Header length is not 54" << std::endl;
+            error = true;
+        }
+        int header_size = *((uint32_t*)(header + 14));
+        if (header_size != 40){
+            std::cerr << "HEAD_ERROR: Header size is not 40" << std::endl;
+            error = true;
+        }
+        int bits_per_pixel = *((uint16_t*)(header + 28));
+        if (bits_per_pixel != 24){
+            std::cerr << "HEAD_ERROR: It is not 24 bits per pixel" << std::endl;
+            error = true;
+        }
+        int compression_mode = *((uint32_t*)(header + 30));
+        if (compression_mode != 0){
+            std::cerr << "HEAD_ERROR: The file must not be compressed" << std::endl;
+            error = true;
+        }
+        if(error){
+            exit(1);
+        }
+    }
+
     long get_file_size(std::FILE* file){
         long size;
         fseek(file, 0, SEEK_END); // seek to end of file
@@ -273,6 +330,7 @@ void steg::stegLSB(const char* porter_filename, const char* info_filename, const
     fread(porter_buffer,1,porter_size,porter_file);
     //write header
     fwrite(porter_buffer, sizeof(uint8_t),54,destiny_file);
+    control_header(porter_buffer, porter_size);
     //Move index after header
     size_t porter_i = 54;
 
@@ -452,6 +510,7 @@ void steg::dec_stegLSB(const char* porter_filename, const char* destiny_filename
         size_t size_c_i = 0;
 
         size_t porter_read = fread(tmp_porter_buffer,1,54,porter_file);
+        control_header(tmp_porter_buffer,porter_size);
 
         size_t info_bit = 0;
 
