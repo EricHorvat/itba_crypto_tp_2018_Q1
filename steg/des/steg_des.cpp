@@ -23,13 +23,13 @@ uint8_t* enc_des_f(uint8_t* text, size_t size, void *data){
     auto *k = (unsigned char *) malloc(8);
     int outl, templ, passl = strlen((const char*)des_data->pass);
 
-    EVP_CIPHER_CTX ctx;
-    EVP_CIPHER_CTX_init(&ctx);
-    EVP_BytesToKey(des_f_array[des_data->mode], EVP_md5(), nullptr, des_data->pass,passl,1,k,iv);
-    EVP_EncryptInit_ex(&ctx, des_f_array[des_data->mode], NULL, k, iv);
-    EVP_EncryptUpdate(&ctx, buffer, &outl, text, size);
-    EVP_EncryptFinal(&ctx, buffer + outl, &templ);
-    EVP_CIPHER_CTX_cleanup(&ctx);
+    EVP_CIPHER_CTX *ctx;
+    ctx = EVP_CIPHER_CTX_new();
+    EVP_BytesToKey(des_f_array[des_data->mode], EVP_sha256(), nullptr, des_data->pass,passl,1,k,iv);
+    EVP_EncryptInit_ex(ctx, des_f_array[des_data->mode], NULL, k, iv);
+    EVP_EncryptUpdate(ctx, buffer, &outl, text, size);
+    EVP_EncryptFinal(ctx, buffer + outl, &templ);
+    EVP_CIPHER_CTX_free(ctx);
 
     return buffer;
 }
@@ -41,13 +41,13 @@ uint8_t* dec_des_f(uint8_t* text, size_t size, void *data){
     auto *k = (unsigned char *) malloc(8);
     int outl, templ, passl = strlen((const char*)des_data->pass);
 
-    EVP_CIPHER_CTX ctx;
-    EVP_CIPHER_CTX_init(&ctx);
-    EVP_BytesToKey(des_f_array[des_data->mode], EVP_md5(), nullptr, des_data->pass,passl,1,k,iv);
-    EVP_DecryptInit_ex(&ctx, des_f_array[des_data->mode], NULL, k, iv);
-    EVP_DecryptUpdate(&ctx, buffer, &outl, text, size);
-    EVP_DecryptFinal(&ctx, buffer + outl, &templ);
-    EVP_CIPHER_CTX_cleanup(&ctx);
+    EVP_CIPHER_CTX* ctx;
+    ctx = EVP_CIPHER_CTX_new();
+    EVP_BytesToKey(des_f_array[des_data->mode], EVP_sha256(), nullptr, des_data->pass,passl,1,k,iv);
+    EVP_DecryptInit_ex(ctx, des_f_array[des_data->mode], NULL, k, iv);
+    EVP_DecryptUpdate(ctx, buffer, &outl, text, size);
+    EVP_DecryptFinal(ctx, buffer + outl, &templ);
+    EVP_CIPHER_CTX_free(ctx);
 
     return buffer;
 }
