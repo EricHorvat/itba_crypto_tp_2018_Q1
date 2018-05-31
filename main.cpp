@@ -7,7 +7,22 @@
 #include "steg/aes/aes_steg.h"
 
 void print_help(){
-
+    std::cout << "Use: <-extract | -embed -in INPUT_FILE> -p PORTER_FILE -out OUTPUT_FILE -steg LSB1|LSB4|LSB8|LSBE [-pass PASSWORD [-a aes128|aes192|aes256|des] [-m cbc|cfb|ecb|ofb]]"<< std::endl;
+    std::cout << std::endl;
+    std::cout << "The required arguments are:" << std::endl;
+    std::cout << "\t -extract:\tSet the program to get a inner file from the porter file." << std::endl;
+    std::cout << "\t -embed:\t Set the program to get a inner file from the porter file. So the -in argument is required." << std::endl;
+    std::cout << "\t -p:\t Set the program to get PORTER_FILE as porter file." << std::endl;
+    std::cout << "\t -out: Set the program to get OUTPUT_FILE as output file." << std::endl;
+    std::cout << "\t -steg: Set the stenography strategy. There are options LSB1, LSB4, LSB8 and LSBE." << std::endl;
+    std::cout << std::endl;
+    std::cout << "The special arguments are:" << std::endl;
+    std::cout << "\t -in: Set the program to get INPUT_FILE as output file. Is required if the -extract argument is passed." << std::endl;
+    std::cout << std::endl;
+    std::cout << "The optional arguments are:" << std::endl;
+    std::cout << "\t -pass: Set PASSWORD as the password to encrypt" << std::endl;
+    std::cout << "\t -a: Set the stream cipher function. There are options aes128, aes192, aes256 and des. If -pass passed the default is aes128." << std::endl;
+    std::cout << "\t -m: Set the stream cipher strategy. There are options cbc, cfb, ecb and ofb. If -pass passed the default is cbc." << std::endl;
 }
 
 
@@ -55,9 +70,6 @@ int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map)
 
     std::map<std::string,std::string> ready_map = (*arg_map);
 
-
-
-
     if(ready_map["mode"].empty()){
         error = true;
         std::cerr << "ERR: No 'mode' argument passed" << std::endl;
@@ -100,7 +112,6 @@ int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map)
 }
 
 void run(std::map<std::string,std::string> parsed_arg){
-    //std::string mode, std::string in, std::string out,std::string porter, std::string steg, std::string f, std::string a, std::string pass
 
     int f_i = -1;
     int lsb_i = -1;
@@ -163,14 +174,6 @@ int main( int argc, char **argv) {
     {
         std::cout << elem.first << " = " << elem.second << std::endl;
     }
-
-    //plain_steg::plain_enc(LSB1,"../in/big.bmp","../in/mid.bmp","../out/bigg.bmp");
-    //plain_steg::plain_dec(LSB1,"../out/bigg.bmp","../out/midd");
-    //steg_des::des_enc(LSB1,ECB,"../in/big.bmp","../in/mid.bmp","../out/biggDES.bmp");
-    /*steg_des::des_dec(LSB1,ECB,"../out/biggDES.bmp","../out/middDES");
-    steg_aes::aes_enc(LSB1,ECB,256,(unsigned char*)"","../in/big.bmp","../in/mid.bmp","../out/biggAES.bmp");
-    steg_aes::aes_dec(LSB1,ECB,256,(unsigned char*)"","../out/biggAES.bmp","../out/middAES");
-    /**/
 
     run(parsed_arg);
 
