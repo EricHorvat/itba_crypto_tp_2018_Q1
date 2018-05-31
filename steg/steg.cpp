@@ -49,22 +49,22 @@ using namespace std;
             error = true;
         }
         int image_start = *((uint32_t*)(header + 10));
-        if (image_start != 54){
+        if (image_start != HEADER_LENGTH){
             std::cerr << "HEAD_ERROR: Header length is not 54" << std::endl;
             error = true;
         }
         int header_size = *((uint32_t*)(header + 14));
-        if (header_size != 40){
+        if (header_size != HEADER_SIZE){
             std::cerr << "HEAD_ERROR: Header size is not 40" << std::endl;
             error = true;
         }
         int bits_per_pixel = *((uint16_t*)(header + 28));
-        if (bits_per_pixel != 24){
+        if (bits_per_pixel != BITS_PER_PIXEL){
             std::cerr << "HEAD_ERROR: It is not 24 bits per pixel" << std::endl;
             error = true;
         }
         int compression_mode = *((uint32_t*)(header + 30));
-        if (compression_mode != 0){
+        if (compression_mode != COMPRESS_MODE){
             std::cerr << "HEAD_ERROR: The file must not be compressed" << std::endl;
             error = true;
         }
@@ -155,7 +155,7 @@ void steg::stegLSB(const char* porter_filename, const char* info_filename, const
     /*Create buffers*/
     auto porter_buffer = (uint8_t *) malloc(sizeof(uint8_t) * porter_size);
     auto info_buffer = (uint8_t *) malloc(sizeof(uint8_t) * (steg::size_without_padding(info_size,extension.length(),0)));
-    auto c_info_buffer = (uint8_t*) malloc(sizeof(uint8_t) * info_c_size + 4 /*Maybe necesary for size of compress*/);
+    auto c_info_buffer = (uint8_t*) malloc(sizeof(uint8_t) * info_c_size + SIZE_BYTES /*Maybe necesary for size of compress*/);
 
     /*while condition var*/
     bool end = false;
@@ -163,14 +163,15 @@ void steg::stegLSB(const char* porter_filename, const char* info_filename, const
     //Read file to buffer
     fread(porter_buffer,1,porter_size,porter_file);
     //write header
-    fwrite(porter_buffer, sizeof(uint8_t),54,destiny_file);
+    fwrite(porter_buffer, sizeof(uint8_t),HEADER_LENGTH,destiny_file);
     if (control_header(porter_buffer, porter_size)){
         fclose(porter_file);
         fclose(destiny_file);
         remove(destiny_filename);
+        exit(1);
     }
     //Move index after header
-    size_t porter_i = 54;
+    size_t porter_i = HEADER_LENGTH;
 
     //Info index
     size_t info_i = 0;
@@ -182,13 +183,13 @@ void steg::stegLSB(const char* porter_filename, const char* info_filename, const
     size_t pre_size_written_i = 0;
     if(!steg_f.is_plain){
         int info_c_size_big = __bswap_32 (info_c_size);
-        memcpy(c_info_buffer,&info_c_size_big,4);
-        pre_size_written_i += 4;
+        memcpy(c_info_buffer,&info_c_size_big,SIZE_BYTES);
+        pre_size_written_i += SIZE_BYTES;
     }
     int info_size_big = __bswap_32(info_size);
-    memcpy(info_buffer,&info_size_big,4);
+    memcpy(info_buffer,&info_size_big,SIZE_BYTES);
     while(ftell(info_file) != info_size) {
-        info_read += fread(info_buffer + 4 + info_read, 1, info_size - info_read, info_file);
+        info_read += fread(info_buffer + SIZE_BYTES + info_read, 1, info_size - info_read, info_file);
     }
     memcpy(info_buffer+4+info_size,extension_c_str,extension.length());
     size_t i = steg::size_without_padding(info_size,extension.length(),0)-1;
@@ -237,15 +238,15 @@ void steg::dec_stegLSB(const char* porter_filename, const char* destiny_filename
 
         long porter_size = get_file_size(porter_file);
 
-        auto tmp_porter_buffer = (uint8_t *) malloc(sizeof(uint8_t) * 54);
+        auto tmp_porter_buffer = (uint8_t *) malloc(sizeof(uint8_t) * HEADER_LENGTH);
         auto porter_buffer = (uint8_t *) malloc(sizeof(uint8_t));
-        auto size_buffer = (uint8_t *) malloc(sizeof(uint8_t) * 4);
+        auto size_buffer = (uint8_t *) malloc(sizeof(uint8_t) * SIZE_BYTES);
 
         uint8_t * info_buffer;
 
         size_t size_c_i = 0;
 
-        fread(tmp_porter_buffer,1,54,porter_file);
+        fread(tmp_porter_buffer,1,HEADER_LENGTH,porter_file);
         if (control_header(tmp_porter_buffer,porter_size)){
             fclose(porter_file);
             fclose(destiny_file);
@@ -278,14 +279,14 @@ void steg::dec_stegLSB(const char* porter_filename, const char* destiny_filename
                 info_bit += bit_l;
                 if (info_bit == 8) {
                     info_bit = 0;
-                    if (size_c_i < 4) {
+                    if (size_c_i < SIZE_BYTES) {
                         size_buffer[size_c_i] = info_aux;
                         size_c_i++;
-                        if (size_c_i == 4) {
+                        if (size_c_i == SIZE_BYTES) {
                             to_read_size = *((uint32_t *) size_buffer);
                             to_read_size = __bswap_32(to_read_size);
                             to_read_buffer = (uint8_t *) malloc(sizeof(uint8_t) * to_read_size);
-                            if(to_read_size >= porter_size - 58 /*54 of header + 4 of size*/){
+                            if(to_read_size >= porter_size - (HEADER_LENGTH + SIZE_BYTES) /*4 of size*/){
                                 std::cerr << "ERR: Cipher data size is greater than porter file size" << std::endl;
                                 fclose(porter_file);
                                 fclose(destiny_file);
@@ -319,21 +320,21 @@ void steg::dec_stegLSB(const char* porter_filename, const char* destiny_filename
             info_buffer = steg_f.f(to_read_buffer,to_read_size,steg_f.data);
             file_size = *((uint32_t *) info_buffer);
             file_size = __bswap_32(file_size);
-            info_buffer += 4;
-        }
-        if(file_size >= to_read_size - 4){
-            std::cerr << "ERR: Stenographer data size is greater than ciphered data size" << std::endl;
-            fclose(porter_file);
-            fclose(destiny_file);
-            remove(destiny_filename);
-            exit(1);
+            info_buffer += SIZE_BYTES;
+            if(file_size >= to_read_size - SIZE_BYTES){
+                std::cerr << "ERR: Stenographer data size is greater than ciphered data size" << std::endl;
+                fclose(porter_file);
+                fclose(destiny_file);
+                remove(destiny_filename);
+                exit(1);
+            }
         }
         fwrite(info_buffer,file_size,1,destiny_file);
         auto a = (char*) (info_buffer + file_size);
 
         fclose(porter_file);
         fclose(destiny_file);
-        if(file_size >= to_read_size - 4){
+        if(file_size >= to_read_size - SIZE_BYTES){
             std::cerr << "WARN: Extension do NOT start with '.' Taking the first 3 characters as extension" << std::endl;
             a[-1] = '.';
             a[3] = '\0';
@@ -348,23 +349,23 @@ void steg::dec_stegLSB(const char* porter_filename, const char* destiny_filename
     }
 
     size_t steg::size_with_padding(size_t info_size, size_t extension_length, size_t buffer_size){
-        size_t size = 4 + extension_length + 1 + info_size;
+        size_t size = SIZE_BYTES + extension_length + 1 + info_size;
         size += (-size)%buffer_size;
         return size;
     }
 
     size_t steg::size_without_padding(size_t info_size, size_t extension_length, size_t buffer_size){
-        return info_size + 4 + extension_length + 1;
+        return info_size + SIZE_BYTES + extension_length + 1;
     }
 
     bool steg::lsb1_size_compare(long porter_size, size_t info_size){
-        return info_size * 8L > (porter_size - 53);
+        return info_size * 8L > (porter_size - HEADER_SIZE);
     }
 
     bool steg::lsb4_size_compare(long porter_size, size_t info_size){
-        return info_size * 2L > (porter_size - 53);
+        return info_size * 2L > (porter_size - HEADER_SIZE);
     }
 
     bool steg::lsb8_size_compare(long porter_size, size_t info_size){
-        return info_size * 1L > (porter_size - 53);
+        return info_size * 1L > (porter_size - HEADER_SIZE);
     }

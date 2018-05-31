@@ -15,6 +15,12 @@
 #define LSBE 2
 #define LSB8 3
 
+#define HEADER_LENGTH 54
+#define HEADER_SIZE 40
+#define BITS_PER_PIXEL 24
+#define SIZE_BYTES 4
+#define COMPRESS_MODE 0
+
 #include <string>
 
 class steg {
