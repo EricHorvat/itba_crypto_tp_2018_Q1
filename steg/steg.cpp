@@ -46,7 +46,7 @@ using namespace std;
         int header_file_size = *((uint32_t*)(header + 2));
         if( header_file_size != file_size){
             std::cerr << "HEAD_ERROR: Header file size indicated differ from file size" << std::endl;
-            error = true;
+            //error = true;
         }
         int image_start = *((uint32_t*)(header + 10));
         if (image_start != HEADER_LENGTH){
@@ -132,12 +132,30 @@ void steg::stegLSB(const char* porter_filename, const char* info_filename, const
     std::FILE* porter_file = std::fopen(porter_filename,"rb");
     std::FILE* info_file = std::fopen(info_filename,"rb");
 
+
+    if (porter_file == nullptr){
+        cerr << "Can't open porter file"<< endl;
+        exit(1);
+    }
+    if (info_file == nullptr){
+        cerr << "Can't open in file"<< endl;
+        fclose(porter_file);
+        exit(1);
+    }
+
     /*get extension of file*/
     std::string extension = get_extension(info_filename);
     const char* extension_c_str = extension.c_str();
 
     /*open OUT files*/
     std::FILE* destiny_file = std::fopen(destiny_filename,"wb");
+
+    if (destiny_file == nullptr){
+        cerr << "Can't open out file"<< endl;
+        fclose(porter_file);
+        fclose(info_file);
+        exit(1);
+    }
 
     /*CONTROL SIZES*/
     long porter_size = get_file_size(porter_file);
@@ -217,8 +235,8 @@ void steg::stegLSB(const char* porter_filename, const char* info_filename, const
         }
 
         fwrite(&y, sizeof(uint8_t),1,destiny_file);
-        end = porter_i == porter_size;
         porter_i++;
+        end = porter_i == porter_size;
     }
 
     fclose(destiny_file);
@@ -235,6 +253,16 @@ void steg::dec_stegLSB(const char* porter_filename, const char* destiny_filename
 
         std::FILE* porter_file = std::fopen(porter_filename,"rb");
         std::FILE* destiny_file = std::fopen(destiny_filename,"wb");
+
+        if (porter_file == nullptr){
+            cerr << "Can't open porter file"<< endl;
+            exit(1);
+        }
+        if (destiny_file == nullptr){
+            cerr << "Can't open out file"<< endl;
+            fclose(porter_file);
+            exit(1);
+        }
 
         long porter_size = get_file_size(porter_file);
 
@@ -293,6 +321,13 @@ void steg::dec_stegLSB(const char* porter_filename, const char* destiny_filename
                                 remove(destiny_filename);
                                 exit(1);
                             }
+                            if( to_read_size <= 0){
+                                std::cerr << "ERR: Cipher data size is less or equal to 0" << std::endl;
+                                fclose(porter_file);
+                                fclose(destiny_file);
+                                remove(destiny_filename);
+                                exit(1);
+                            }
                             size_buffer = (uint8_t *) malloc(sizeof(uint32_t));
                         }
                     } else {
@@ -334,10 +369,10 @@ void steg::dec_stegLSB(const char* porter_filename, const char* destiny_filename
 
         fclose(porter_file);
         fclose(destiny_file);
-        if(file_size >= to_read_size - SIZE_BYTES){
+        if(a[0] != '.'){
             std::cerr << "WARN: Extension do NOT start with '.' Taking the first 3 characters as extension" << std::endl;
             a[-1] = '.';
-            a[3] = '\0';
+            a[4] = '\0';
             a = a - 1;
         }
 

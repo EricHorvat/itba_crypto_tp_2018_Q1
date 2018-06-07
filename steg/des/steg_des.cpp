@@ -19,7 +19,7 @@ const EVP_CIPHER* des_f_array[] = {EVP_des_cbc(),EVP_des_cfb8(),EVP_des_ecb(),EV
 uint8_t* enc_des_f(uint8_t* text, size_t size, void *data){
     auto des_data = (DES_DATA*)data;
     auto buffer = (uint8_t *) malloc(sizeof(char) * size);
-    unsigned char iv[8];// = "01234567\0";
+    unsigned char iv[8];
     auto *k = (unsigned char *) malloc(8);
     int outl, templ, passl = strlen((const char*)des_data->pass);
 
@@ -37,7 +37,7 @@ uint8_t* enc_des_f(uint8_t* text, size_t size, void *data){
 uint8_t* dec_des_f(uint8_t* text, size_t size, void *data){
     auto des_data = (DES_DATA*)data;
     auto buffer = (uint8_t *) malloc(sizeof(char) * size);
-    unsigned char iv[8];// = "0123456789012345\0";
+    unsigned char iv[8];
     auto *k = (unsigned char *) malloc(8);
     int outl, templ, passl = strlen((const char*)des_data->pass);
 
