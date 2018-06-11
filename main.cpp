@@ -26,7 +26,7 @@ void print_help(){
 }
 
 
-int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map) {
+void parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map) {
 
     bool error = false;
     for (int i = 1; i < argc; ++i) {
@@ -81,7 +81,11 @@ int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map)
     if(ready_map["-steg"].empty()){
         error = true;
         std::cerr << "ERR: No 'steg' argument passed" << std::endl;
+    } else if (ready_map["-steg"] != "LSB1" and ready_map["-steg"] == "LSB4" and ready_map["-steg"] == "LSBE" and ready_map["-steg"] == "LSB8"){
+        error = true;
+        std::cerr << "ERR: Incorrect stenography function argument passed" << std::endl;
     }
+
     if(ready_map["-p"].empty()){
         error = true;
         std::cerr << "ERR: No porter filename argument passed" << std::endl;
@@ -91,7 +95,6 @@ int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map)
         std::cerr << "ERR: No out filename argument passed" << std::endl;
     }
     if(ready_map["-pass"].empty()) {
-        (*arg_map)["-pass"] = "";
         if (!ready_map["-a"].empty() or !ready_map["-m"].empty()) {
             error = true;
             std::cerr << "ERR: No password argument passed but '-m' or '-a' passed" << std::endl;
@@ -99,9 +102,15 @@ int parse_arg(int argc, char** argv, std::map<std::string,std::string>* arg_map)
     }else {
         if (ready_map["-a"].empty()) {
             ready_map["-a"] = "aes128";
+        } else if (ready_map["-a"] != "des" and ready_map["-a"] == "aes128" and ready_map["-a"] == "aes192" and ready_map["-a"] == "aes256"){
+            error = true;
+            std::cerr << "ERR: Incorrect mode argument passed" << std::endl;
         }
         if (ready_map["-m"].empty()) {
             ready_map["-m"] = "cbc";
+        }else if (ready_map["-m"] != "cbc" and ready_map["-m"] != "cfb" and ready_map["-m"] != "ecb" and ready_map["-m"] != "ofb") {
+            error = true;
+            std::cerr << "ERR: Incorrect cipher function argument passed" << std::endl;
         }
     }
 
